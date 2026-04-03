@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전입신고 관리 · QUETTA</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --g900:#0D6B64; --g700:#1A9E95; --g500:#2BADA0; --g100:#C8EDEA; --g50:#EAF7F6;
+  --gold:#D4BE52; --gold2:#B8A030; --gold-bg:#FAF6D0;
+  --cream:#F7FAFA; --warm1:#EDF5F4; --warm2:#D5E8E7;
+  --t1:#1C2E2D; --t2:#4A7570; --t3:#8AADAA; --white:#FFFFFF;
+  --red:#DC2626; --red-bg:#FEE2E2;
+  --sh:0 1px 3px rgba(0,0,0,.07); --sh2:0 4px 16px rgba(0,0,0,.10);
+  --r:10px; --r2:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t1);min-height:100vh;font-size:14px;line-height:1.5}
+
+/* ── LOGIN ── */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#0D6B64 0%,#2BADA0 100%);padding:20px}
+.login-card{background:var(--white);border-radius:var(--r2);padding:48px 40px;width:100%;max-width:380px;box-shadow:var(--sh2)}
+.login-brand{text-align:center;margin-bottom:32px}
+.login-brand .lb-label{font-size:10px;letter-spacing:3px;color:var(--t3);text-transform:uppercase}
+.login-brand .lb-name{font-family:'Playfair Display',serif;font-size:30px;color:var(--g900);letter-spacing:3px;margin:4px 0 2px}
+.login-brand .lb-sub{font-size:12px;color:var(--t3)}
+.divider{height:1px;background:var(--warm2);margin:0 0 28px}
+
+/* ── FORMS ── */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 13px;border:1.5px solid var(--warm2);border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--t1);background:var(--white);outline:none;transition:border-color .15s}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--g700)}
+.fg textarea{resize:vertical}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 18px;border:none;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--g900);color:#fff;width:100%;padding:12px;font-size:14px;font-weight:600}
+.btn-primary:hover{background:var(--g700)}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-gold:hover{background:var(--gold2)}
+.btn-ghost{background:var(--warm1);color:var(--t1)}
+.btn-ghost:hover{background:var(--warm2)}
+.btn-red{background:var(--red-bg);color:var(--red)}
+.btn-red:hover{background:#FECACA}
+.btn-sm{padding:6px 11px;font-size:12px}
+
+.login-err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none}
+
+/* ── PENDING ── */
+#pendingScreen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
+.pending-card{background:var(--white);border-radius:var(--r2);padding:48px 40px;max-width:460px;box-shadow:var(--sh2)}
+.pending-card h2{font-size:18px;color:var(--g900);margin:12px 0 8px}
+.pending-card p{font-size:13px;color:var(--t2);line-height:1.7}
+.uid-box{font-family:monospace;font-size:12px;background:var(--warm1);padding:6px 10px;border-radius:5px;margin:12px 0 20px;word-break:break-all;color:var(--t2)}
+
+/* ── LAYOUT ── */
+#appScreen{display:none}
+.layout{display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:220px;background:var(--g900);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;overflow-y:auto}
+.sb-head{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;opacity:.4;margin-bottom:2px}
+.sb-name{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);letter-spacing:1.5px}
+.sb-sub{font-size:10px;opacity:.35;margin-top:1px}
+.sb-nav{flex:1;padding:10px 8px}
+.nav-sec{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;opacity:.35;padding:10px 12px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;cursor:pointer;font-size:13px;opacity:.65;transition:all .15s;margin-bottom:1px}
+.nav-item:hover{background:rgba(255,255,255,.08);opacity:.9}
+.nav-item.active{background:rgba(201,168,76,.18);opacity:1;color:var(--gold)}
+.sb-foot{padding:12px 8px;border-top:1px solid rgba(255,255,255,.1)}
+.sb-user{padding:6px 12px 8px}
+.sb-user-name{font-size:13px;font-weight:600}
+.sb-user-role{font-size:11px;opacity:.45}
+.btn-logout{width:100%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);border:none;padding:8px;border-radius:7px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:12px;transition:all .15s}
+.btn-logout:hover{background:rgba(255,255,255,.15);color:#fff}
+
+/* Main */
+.main{flex:1;padding:28px 30px;overflow-y:auto;min-width:0}
+.pg-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:12px}
+.pg-title{font-size:20px;font-weight:700;color:var(--g900)}
+.pg-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.pg-actions{display:flex;gap:8px;flex-shrink:0}
+
+/* Card */
+.card{background:var(--white);border-radius:var(--r);border:1px solid var(--warm2);box-shadow:var(--sh)}
+.card-head{padding:14px 16px 12px;border-bottom:1px solid var(--warm1);display:flex;align-items:center;justify-content:space-between}
+.card-head-title{font-size:14px;font-weight:600}
+.card-body{padding:16px}
+
+/* Summary grid */
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:22px}
+.sum-card{background:var(--white);border-radius:var(--r);border:1px solid var(--warm2);box-shadow:var(--sh);overflow:hidden;cursor:pointer;transition:box-shadow .15s}
+.sum-card:hover{box-shadow:var(--sh2)}
+.sum-card-head{background:var(--g900);color:#fff;padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
+.sum-cls{font-size:15px;font-weight:700;letter-spacing:.5px}
+.sum-teacher{font-size:11px;opacity:.5}
+.sum-body{padding:12px 14px}
+.sum-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.sum-row:last-child{margin-bottom:0}
+.sum-label{font-size:12px;color:var(--t2)}
+.sum-bar-wrap{flex:1;margin:0 10px;height:5px;background:var(--warm2);border-radius:3px;overflow:hidden}
+.sum-bar{height:100%;background:var(--g500);border-radius:3px;transition:width .3s}
+.sum-count{font-size:12px;font-weight:600;color:var(--g700);white-space:nowrap}
+
+/* Search/filter bar */
+.tool-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.search-input{padding:8px 12px;border:1.5px solid var(--warm2);border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;width:200px;transition:border-color .15s}
+.search-input:focus{border-color:var(--g700)}
+.chip{padding:5px 13px;border-radius:20px;border:1.5px solid var(--warm2);background:var(--white);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Noto Sans KR',sans-serif}
+.chip:hover{border-color:var(--g700);color:var(--g700)}
+.chip.active{background:var(--g900);color:#fff;border-color:var(--g900)}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+.tbl{width:100%;border-collapse:collapse;min-width:600px}
+.tbl th{text-align:left;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);background:var(--cream);border-bottom:1px solid var(--warm2);white-space:nowrap}
+.tbl th.center,.tbl td.center{text-align:center}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--warm1);font-size:13px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:var(--g50)}
+
+/* Checkbox doc */
+.doc-cb{width:18px;height:18px;cursor:pointer;accent-color:var(--g700)}
+.doc-wrap{display:flex;align-items:center;justify-content:center;gap:4px}
+
+/* Badges */
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500}
+.bdg-g{background:var(--g100);color:var(--g700)}
+.bdg-gold{background:var(--gold-bg);color:var(--gold2)}
+.bdg-gray{background:var(--warm1);color:var(--t2)}
+.bdg-red{background:var(--red-bg);color:var(--red)}
+
+/* Round select inline */
+.round-sel{padding:4px 7px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:12px;outline:none;background:var(--white);cursor:pointer}
+
+/* Upload zone */
+.upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--warm2);border-radius:var(--r);padding:40px 20px;cursor:pointer;transition:all .15s;text-align:center}
+.upload-zone:hover{border-color:var(--g700);background:var(--g50)}
+.uz-icon{font-size:36px;margin-bottom:10px}
+.uz-text{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.uz-sub{font-size:12px;color:var(--t3)}
+
+/* Info box */
+.info-box{background:var(--gold-bg);border-left:3px solid var(--gold);border-radius:7px;padding:11px 14px;font-size:12px;color:var(--t2);line-height:1.7;margin-bottom:16px}
+
+/* Schedule */
+.sch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.sch-card{background:var(--white);border-radius:var(--r);border:1px solid var(--warm2);box-shadow:var(--sh);overflow:hidden}
+.sch-head{background:var(--g900);color:#fff;padding:11px 14px;display:flex;justify-content:space-between;align-items:center}
+.sch-cls{font-size:15px;font-weight:700}
+.sch-rounds{display:flex;flex-direction:column;gap:6px;padding:12px 14px}
+.sch-round-row{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--cream);border-radius:7px}
+.sch-round-label{font-size:12px;font-weight:700;color:var(--g900)}
+.sch-round-date{font-size:13px;color:var(--t1)}
+.sch-round-actions{display:flex;gap:5px}
+.sch-empty{padding:14px;font-size:12px;color:var(--t3)}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--white);border-radius:var(--r2);width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2)}
+.modal-head{padding:16px 20px 12px;border-bottom:1px solid var(--warm1);display:flex;align-items:center;justify-content:space-between}
+.modal-head-title{font-size:15px;font-weight:700}
+.modal-x{background:none;border:none;font-size:20px;cursor:pointer;color:var(--t3);line-height:1;padding:0}
+.modal-body{padding:20px}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--warm1);display:flex;gap:8px;justify-content:flex-end}
+
+/* Toast */
+.toast-wrap{position:fixed;bottom:22px;right:22px;z-index:2000}
+.toast{background:var(--g900);color:#fff;padding:11px 16px;border-radius:7px;font-size:13px;margin-top:6px;box-shadow:var(--sh2);animation:slideUp .2s ease}
+.toast.err{background:var(--red)}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
+
+.view{display:none}
+.view.active{display:block}
+
+.empty{text-align:center;padding:48px 20px;color:var(--t3)}
+.empty .ei{font-size:36px;margin-bottom:10px}
+.empty p{font-size:13px}
+.tbl-actions{display:flex;gap:6px;justify-content:flex-end}
+
+@media(max-width:700px){.sidebar{display:none}.main{padding:16px}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="lb-label">강남대성기숙</div>
+      <div class="lb-name">QUETTA</div>
+      <div class="lb-sub">전입신고 관리 시스템</div>
+    </div>
+    <div class="divider"></div>
+    <!-- 탭 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:22px;border:1.5px solid var(--warm2);border-radius:8px;overflow:hidden">
+      <button id="tabStaff" onclick="switchLoginTab('staff')"
+        style="padding:9px;border:none;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:var(--g900);color:#fff;transition:all .15s">
+        👤 직원 로그인
+      </button>
+      <button id="tabTeacher" onclick="switchLoginTab('teacher')"
+        style="padding:9px;border:none;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:500;cursor:pointer;background:var(--warm1);color:var(--t2);transition:all .15s">
+        🏫 담임 입장
+      </button>
+    </div>
+
+    <!-- 직원 폼 -->
+    <div id="formStaff">
+      <div class="fg"><label>이메일</label><input type="email" id="loginEmail" placeholder="이메일"></div>
+      <div class="fg"><label>비밀번호</label><input type="password" id="loginPw" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-primary" onclick="doLogin()">로그인</button>
+    </div>
+
+    <!-- 담임 폼 -->
+    <div id="formTeacher" style="display:none">
+      <div class="fg" id="tcClsGroup">
+        <label>반 선택</label>
+        <select id="tcCls"><option value="">반을 선택하세요</option></select>
+      </div>
+      <div class="fg"><label>반 비밀번호</label><input type="password" id="tcPw" placeholder="담당 직원에게 문의"></div>
+      <div class="fg"><label>이름 <span style="font-size:10px;color:var(--t3);font-weight:400">(수정 이력 기록용)</span></label>
+        <input type="text" id="tcName" placeholder="본인 이름 입력" onkeydown="if(event.key==='Enter')doTeacherLogin()">
+      </div>
+      <button class="btn btn-primary" onclick="doTeacherLogin()">입장</button>
+    </div>
+
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- PENDING -->
+<div id="pendingScreen">
+  <div class="pending-card">
+    <div style="font-size:40px">⏳</div>
+    <h2>계정 활성화 대기 중</h2>
+    <p>담당 직원에게 계정 활성화를 요청해 주세요.</p>
+    <div class="uid-box" id="pendingUid"></div>
+    <button class="btn btn-ghost" onclick="doLogout()">로그아웃</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sb-head">
+        <div class="sb-label">강남대성기숙</div>
+        <div class="sb-name">QUETTA</div>
+        <div class="sb-sub">전입신고 관리</div>
+      </div>
+      <nav class="sb-nav" id="sbNav"></nav>
+      <div class="sb-foot">
+        <div class="sb-user">
+          <div class="sb-user-name" id="sbName">-</div>
+          <div class="sb-user-role" id="sbRole">-</div>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">로그아웃</button>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- 현황판 -->
+      <div class="view" id="vDashboard">
+        <div class="pg-head">
+          <div><div class="pg-title">📊 현황판</div><div class="pg-sub">반별 서류 제출 현황</div></div>
+        </div>
+        <div class="sum-grid" id="sumGrid"></div>
+      </div>
+
+      <!-- 학생 관리 -->
+      <div class="view" id="vStudents">
+        <div class="pg-head">
+          <div><div class="pg-title">👥 학생 관리</div><div class="pg-sub">서류 제출 현황을 업데이트하세요</div></div>
+          <div class="pg-actions">
+            <button class="btn btn-ghost" id="exportBtn" onclick="exportClass()">📤 내보내기</button>
+            <button class="btn btn-gold" onclick="openStuModal()">+ 학생 추가</button>
+          </div>
+        </div>
+        <div class="tool-bar">
+          <input class="search-input" id="stuSearch" placeholder="이름 또는 학번 검색" oninput="renderStudents()">
+          <div id="clsChips"></div>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl" id="stuTable">
+              <thead>
+                <tr>
+                  <th onclick="setSortCol('studentId')" style="cursor:pointer;user-select:none">학번 <span id="sh-studentId"></span></th>
+                  <th onclick="setSortCol('name')" style="cursor:pointer;user-select:none">성명 <span id="sh-name"></span></th>
+                  <th onclick="setSortCol('gender')" style="cursor:pointer;user-select:none">성별 <span id="sh-gender"></span></th>
+                  <th class="center">전입신고서</th>
+                  <th class="center">건강보험증</th>
+                  <th class="center">신분증</th>
+                  <th class="center">징병검사</th>
+                  <th onclick="setSortCol('round')" style="cursor:pointer;user-select:none">회차 <span id="sh-round"></span></th>
+                  <th>비고</th><th class="center">퇴소</th><th></th>
+                </tr>
+              </thead>
+              <tbody id="stuBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 스케줄 -->
+      <div class="view" id="vSchedule">
+        <div class="pg-head">
+          <div><div class="pg-title">📅 스케줄 관리</div><div class="pg-sub">반별 회차 일정</div></div>
+          <button class="btn btn-gold" onclick="openSchModal()">+ 일정 추가</button>
+        </div>
+        <div class="sch-grid" id="schGrid"></div>
+      </div>
+
+      <!-- Import -->
+      <div class="view" id="vImport">
+        <div class="pg-head">
+          <div><div class="pg-title">📥 데이터 가져오기</div><div class="pg-sub">기존 CSV 또는 엑셀 파일을 업로드하세요</div></div>
+          <div class="pg-actions">
+            <button class="btn btn-red" onclick="resetAllData()">🗑 데이터 일괄 리셋</button>
+            <button class="btn btn-ghost" onclick="downloadSample()">📥 샘플 엑셀 다운로드</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><div class="card-head-title">학생 명단 import</div></div>
+          <div class="card-body">
+            <div class="info-box">
+              📋 <strong>지원 형식:</strong> 기존 구글 시트 CSV (반별 시트) 또는 엑셀<br>
+              헤더: <code>No. · 반 · 학번 · 성별 · 성명 · 전입신고서 · 건강보험증 · 신분증 · 징병검사 · 비고 · 차수</code><br>
+              ㅇ = 제출완료로 자동 변환됩니다. 기존 학생은 업데이트, 신규는 추가됩니다.
+            </div>
+            <label class="upload-zone" for="importFile">
+              <div class="uz-icon">📂</div>
+              <div class="uz-text">클릭하거나 파일을 드래그하세요</div>
+              <div class="uz-sub">.csv · .xlsx · .xls</div>
+            </label>
+            <input type="file" id="importFile" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImport(this)">
+          </div>
+        </div>
+        <div class="card" id="importPreviewCard" style="display:none">
+          <div class="card-head">
+            <div class="card-head-title">📋 미리보기 <span id="importCount" style="font-weight:400;font-size:12px;color:var(--t2)"></span></div>
+            <button class="btn btn-gold btn-sm" onclick="commitImport()">💾 가져오기 실행</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>반</th><th>학번</th><th>성명</th><th>성별</th><th class="center">전입신고서</th><th class="center">건강보험증</th><th class="center">신분증</th><th class="center">징병검사</th><th>회차</th><th>비고</th></tr></thead>
+              <tbody id="importBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 반 관리 -->
+      <div class="view" id="vClasses">
+        <div class="pg-head">
+          <div><div class="pg-title">🏫 반 관리</div></div>
+          <div class="pg-actions">
+            <button class="btn btn-ghost" onclick="bulkSetPasswords()">🔑 비밀번호 일괄 설정</button>
+            <button class="btn btn-gold" onclick="openClsModal()">+ 반 추가</button>
+          </div>
+        </div>
+        <div class="card"><div id="clsList"></div></div>
+      </div>
+
+      <!-- 사용자 관리 -->
+      <div class="view" id="vUsers">
+        <div class="pg-head">
+          <div><div class="pg-title">👤 사용자 관리</div></div>
+          <button class="btn btn-gold" onclick="openUsrModal()">+ 계정 등록</button>
+        </div>
+        <div class="card"><div id="usrList"></div></div>
+      </div>
+
+      <!-- 담임: 내 반 현황 -->
+      <div class="view" id="vMyClass">
+        <div class="pg-head">
+          <div><div class="pg-title">📊 내 반 현황</div><div class="pg-sub" id="myClsName"></div></div>
+          <div class="pg-actions">
+            <button class="btn btn-ghost" onclick="exportClass()">📤 내보내기</button>
+            <button class="btn btn-gold" onclick="openStuModal()">+ 학생 추가</button>
+          </div>
+        </div>
+        <div id="mySchBanner" style="margin-bottom:14px"></div>
+        <div id="myDash" style="margin-bottom:18px"></div>
+        <div class="card">
+          <div class="tool-bar" style="padding:12px 14px 0">
+            <input class="search-input" id="myStuSearch" placeholder="이름 또는 학번" oninput="renderMyStudents()">
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr>
+                <th onclick="setSortCol('studentId')" style="cursor:pointer;user-select:none">학번 <span id="msh-studentId"></span></th>
+                <th onclick="setSortCol('name')" style="cursor:pointer;user-select:none">성명 <span id="msh-name"></span></th>
+                <th onclick="setSortCol('gender')" style="cursor:pointer;user-select:none">성별 <span id="msh-gender"></span></th>
+                <th class="center">전입신고서</th><th class="center">건강보험증</th>
+                <th class="center">신분증</th><th class="center">징병검사</th>
+                <th onclick="setSortCol('round')" style="cursor:pointer;user-select:none">회차 <span id="msh-round"></span></th>
+                <th>비고</th><th class="center">퇴소</th>
+              </tr></thead>
+              <tbody id="myStuBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- MODAL: 학생 추가/수정 -->
+<div class="overlay" id="stuOverlay">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-head-title" id="stuModalTitle">학생 추가</div><button class="modal-x" onclick="closeOverlay('stuOverlay')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="stuEditId">
+      <div class="fg"><label>반</label><select id="stuClass"></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="fg"><label>학번</label><input type="text" id="stuNo" placeholder="학번"></div>
+        <div class="fg"><label>성별</label><select id="stuGender"><option value="남">남</option><option value="여">여</option></select></div>
+      </div>
+      <div class="fg"><label>성명</label><input type="text" id="stuName" placeholder="이름"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="cbForm"> 전입신고서</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="cbIns"> 건강보험증</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="cbId"> 신분증</label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="cbMil"> 징병검사</label>
+      </div>
+      <div class="fg"><label>회차</label>
+        <select id="stuRound">
+          <option value="">-</option>
+          <option value="1차">1차</option>
+          <option value="2차">2차</option>
+          <option value="3차">3차</option>
+          <option value="개별완료">개별완료</option>
+        </select>
+      </div>
+      <div class="fg"><label>비고</label><input type="text" id="stuNotes" placeholder="비고"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay('stuOverlay')">취소</button>
+      <button class="btn btn-gold" onclick="saveStudent()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 스케줄 -->
+<div class="overlay" id="schOverlay">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-head-title" id="schModalTitle">일정 추가</div><button class="modal-x" onclick="closeOverlay('schOverlay')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="schEditId">
+      <div class="fg"><label>반</label><select id="schClass"></select></div>
+      <div class="fg"><label>회차</label>
+        <select id="schRound">
+          <option value="1차">1차</option><option value="2차">2차</option><option value="3차">3차</option>
+        </select>
+      </div>
+      <div class="fg"><label>날짜</label><input type="date" id="schDate"></div>
+      <div class="fg"><label>비고</label><input type="text" id="schNotes" placeholder="특이사항"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay('schOverlay')">취소</button>
+      <button class="btn btn-gold" onclick="saveSchedule()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 반 -->
+<div class="overlay" id="clsOverlay">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-head-title" id="clsModalTitle">반 추가</div><button class="modal-x" onclick="closeOverlay('clsOverlay')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="clsEditId">
+      <div class="fg"><label>반 이름</label><input type="text" id="clsName" placeholder="예: A1, X1, K2"></div>
+      <div class="fg"><label>담임 이름 <span style="font-size:10px;color:var(--t3)">(담임이 입력할 이름)</span></label><input type="text" id="clsTeacherName" placeholder="예: 송병수"></div>
+      <div class="fg"><label>담임 입장 비밀번호</label><input type="text" id="clsPw" placeholder="예: quetta1234"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay('clsOverlay')">취소</button>
+      <button class="btn btn-gold" onclick="saveClass()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: 사용자 -->
+<div class="overlay" id="usrOverlay">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-head-title" id="usrModalTitle">계정 등록</div><button class="modal-x" onclick="closeOverlay('usrOverlay')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="usrEditId">
+      <div id="usrNewFields">
+        <div class="fg"><label>이메일</label><input type="email" id="usrEmail" placeholder="이메일"></div>
+        <div class="fg"><label>초기 비밀번호</label><input type="password" id="usrPw" placeholder="8자 이상"></div>
+      </div>
+      <div class="fg"><label>이름</label><input type="text" id="usrName" placeholder="이름"></div>
+      <div class="fg"><label>역할</label>
+        <select id="usrRole" onchange="toggleClsField()">
+          <option value="staff">담당 직원 (전체 반)</option>
+          <option value="teacher">담임 교사</option>
+        </select>
+      </div>
+      <div class="fg" id="usrClsGrp" style="display:none">
+        <label>담당 반</label><select id="usrCls"><option value="">선택 안 함</option></select>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay('usrOverlay')">취소</button>
+      <button class="btn btn-gold" id="usrSaveBtn" onclick="saveUser()">저장</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="module">
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ⚠️ Firebase 설정값 교체 필요
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const FB = {
+apiKey: "AIzaSyAtIteJqFLAjZk-OOaj3nkkZVD77vYFZ4o",
+  authDomain: "quetta-2ea94.firebaseapp.com",
+  projectId: "quetta-2ea94",
+  storageBucket: "quetta-2ea94.firebasestorage.app",
+  messagingSenderId: "742368924282",
+  appId: "1:742368924282:web:db7dabb31ff08ea97521c3",
+  measurementId: "G-VXJR0KCTD1"
+};
+
+/*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Firestore 보안 규칙 (Firebase Console → Firestore → 규칙)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuth() { return request.auth != null; }
+    function isStaff() {
+      return isAuth() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+    }
+    match /users/{uid}     { allow read: if isAuth(); allow write: if isStaff(); }
+    match /classes/{id}    { allow read: if isAuth(); allow write: if isStaff(); }
+    match /schedules/{id}  { allow read: if isAuth(); allow write: if isStaff(); }
+    match /students/{id}   { allow read: if isAuth(); allow write: if isAuth(); }
+    match /records/{id}    { allow read: if isAuth(); allow write: if isAuth(); }
+  }
+}
+*/
+
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
+         createUserWithEmailAndPassword, signInAnonymously,
+         browserSessionPersistence, browserLocalPersistence, setPersistence }
+  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+         getDocs, getDoc, setDoc, query, orderBy, writeBatch, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+const app  = initializeApp(FB);
+const app2 = initializeApp(FB, 'secondary');
+const auth = getAuth(app);
+const auth2= getAuth(app2);
+const db   = getFirestore(app);
+
+// ── 상태 ──
+let me, meDoc;
+let classes=[], students=[], schedules=[], records=[], users=[];
+let activeClsFilter = null;
+let importRows = [];
+let teacherSession = null; // { classId, name } — 담임 세션
+
+// ── 로그인 탭 전환 ──
+window.switchLoginTab = tab => {
+  const isStaff = tab === 'staff';
+  $('formStaff').style.display   = isStaff ? 'block' : 'none';
+  $('formTeacher').style.display = isStaff ? 'none'  : 'block';
+  $('tabStaff').style.background   = isStaff ? 'var(--g900)' : 'var(--warm1)';
+  $('tabStaff').style.color        = isStaff ? '#fff'         : 'var(--t2)';
+  $('tabTeacher').style.background = isStaff ? 'var(--warm1)' : 'var(--g900)';
+  $('tabTeacher').style.color      = isStaff ? 'var(--t2)'    : '#fff';
+  $('loginErr').style.display = 'none';
+  // 담임 탭 전환 시 반 선택란 항상 초기화 (링크 접속 후 일반 접속 시 숨김 방지)
+  if (!isStaff) $('tcClsGroup').style.display = 'block';
+};
+
+// ── URL 파라미터로 반 자동 선택 ──
+function checkUrlClass() {
+  const params = new URLSearchParams(location.search);
+  const cls = params.get('class');
+  if (cls) {
+    switchLoginTab('teacher');
+    const opt = [...$('tcCls').options].find(o => o.text.startsWith(cls));
+    if (opt) {
+      $('tcCls').value = opt.value;
+      // 링크로 접속 시 반 선택 숨김
+      $('tcClsGroup').style.display = 'none';
+    }
+  }
+}
+
+// ── 직원 로그인 ──
+window.doLogin = async () => {
+  const err = $('loginErr');
+  err.style.display = 'none';
+  try {
+    // 직원도 탭 닫으면 로그아웃
+    await setPersistence(auth, browserSessionPersistence);
+    await signInWithEmailAndPassword(auth, $('loginEmail').value.trim(), $('loginPw').value);
+  } catch(e) {
+    err.style.display = 'block';
+    err.textContent = e.code==='auth/invalid-credential' ? '이메일 또는 비밀번호 오류'
+                    : e.code==='auth/invalid-api-key'    ? 'Firebase API Key 오류'
+                    : `오류: ${e.code}`;
+  }
+};
+
+// ── 담임 입장 ──
+window.doTeacherLogin = async () => {
+  const err = $('loginErr');
+  err.style.display = 'none';
+  const classId  = $('tcCls').value;
+  const pw       = $('tcPw').value.trim();
+  const name     = $('tcName').value.trim();
+  if (!classId) { err.style.display='block'; err.textContent='반을 선택해 주세요.'; return; }
+  if (!pw)      { err.style.display='block'; err.textContent='비밀번호를 입력해 주세요.'; return; }
+  if (!name)    { err.style.display='block'; err.textContent='이름을 입력해 주세요.'; return; }
+
+  try {
+    // teacherSession을 먼저 설정 후 로그인 (onAuthStateChanged 타이밍 이슈 방지)
+    teacherSession = { classId, name };
+
+    // 담임은 탭 닫으면 자동로그아웃 (SESSION 유지)
+    await setPersistence(auth, browserSessionPersistence);
+    await signInAnonymously(auth);
+    // 반 비밀번호 검증
+    const snap = await getDoc(doc(db, 'classes', classId));
+    if (!snap.exists() || snap.data().password?.toLowerCase() !== pw.toLowerCase()) {
+      teacherSession = null;
+      await signOut(auth);
+      err.style.display='block'; err.textContent='비밀번호가 올바르지 않습니다.'; return;
+    }
+    meDoc = { role: 'teacher', classId, name };
+    await reload();
+    initApp();
+  } catch(e) {
+    err.style.display='block'; err.textContent=`오류: ${e.code||e.message}`;
+  }
+};
+
+window.doLogout = async () => {
+  teacherSession = null;
+  await signOut(auth);
+};
+
+onAuthStateChanged(auth, async user => {
+  if (!user) {
+    me=null; meDoc=null; showScreen('loginScreen');
+    populateClassSelect();
+    return;
+  }
+  me = user;
+
+  // 담임 세션 (같은 탭 내에서만 유지, 새로고침 시 재로그인 필요)
+  if (teacherSession) {
+    meDoc = { role: 'teacher', classId: teacherSession.classId, name: teacherSession.name };
+    await reload();
+    initApp();
+    return;
+  }
+  if (user.isAnonymous) {
+    // 세션 없는 익명 → 바로 로그아웃
+    teacherSession = null;
+    await signOut(auth); return;
+  }
+
+  // 직원 로그인
+  const snap = await getDoc(doc(db,'users',user.uid));
+  if (!snap.exists()) { showScreen('pendingScreen'); $('pendingUid').textContent=user.uid; return; }
+  meDoc = {id:snap.id,...snap.data()};
+  await reload();
+  initApp();
+});
+
+// 로그인 화면 반 select 채우기 (비인증 상태에서도 필요)
+async function populateClassSelect() {
+  try {
+    const tmpAuth = getAuth(app2);
+    const db2 = getFirestore(app2);
+    await signInAnonymously(tmpAuth);
+    const snap = await getDocs(query(collection(db2,'classes'), orderBy('name')));
+    const clsList = snap.docs.map(d=>({id:d.id,...d.data()}));
+    await signOut(tmpAuth);
+    $('tcCls').innerHTML = `<option value="">반을 선택하세요</option>`
+      + clsList.map(c=>`<option value="${c.id}">${c.name}반</option>`).join('');
+    checkUrlClass();
+  } catch(e) {
+    console.warn('반 목록 로드 실패:', e.code, e.message);
+  }
+}
+
+async function reload() {
+  const [cs,ss,sts,rs,us] = await Promise.all([
+    getDocs(query(collection(db,'classes'), orderBy('name'))),
+    getDocs(query(collection(db,'schedules'), orderBy('date'))),
+    getDocs(query(collection(db,'students'), orderBy('classId'))),
+    getDocs(collection(db,'records')),
+    getDocs(collection(db,'users')),
+  ]);
+  classes   = cs.docs.map(d=>({id:d.id,...d.data()}));
+  schedules = ss.docs.map(d=>({id:d.id,...d.data()}));
+  students  = sts.docs.map(d=>({id:d.id,...d.data()}));
+  records   = rs.docs.map(d=>({id:d.id,...d.data()}));
+  users     = us.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+// ── INIT ──
+function initApp() {
+  showScreen('appScreen');
+  $('sbName').textContent = meDoc.name || me.email;
+  $('sbRole').textContent = meDoc.role==='staff'?'담당 직원':'담임 교사';
+  buildNav();
+  updateSortHeaders();
+  document.querySelector('.nav-item')?.click();
+}
+
+function buildNav() {
+  const nav = $('sbNav');
+  if (meDoc.role==='staff') {
+    nav.innerHTML = `
+      <div class="nav-sec">현황</div>
+      <div class="nav-item" onclick="switchTab('vDashboard',this)"><span>📊</span> 현황판</div>
+      <div class="nav-item" onclick="switchTab('vStudents',this)"><span>👥</span> 학생 관리</div>
+      <div class="nav-sec">일정</div>
+      <div class="nav-item" onclick="switchTab('vSchedule',this)"><span>📅</span> 스케줄</div>
+      <div class="nav-sec">관리</div>
+      <div class="nav-item" onclick="switchTab('vImport',this)"><span>📥</span> 데이터 import</div>
+      <div class="nav-item" onclick="switchTab('vClasses',this)"><span>🏫</span> 반 관리</div>
+      <div class="nav-item" onclick="switchTab('vUsers',this)"><span>👤</span> 사용자</div>`;
+  } else {
+    nav.innerHTML = `
+      <div class="nav-sec">내 반</div>
+      <div class="nav-item" onclick="switchTab('vMyClass',this)"><span>📊</span> 현황 & 학생</div>`;
+  }
+}
+
+window.switchTab = (id, el) => {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $(id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el?.classList.add('active');
+  ({
+    vDashboard:  renderDashboard,
+    vStudents:   renderStudents,
+    vSchedule:   renderSchedule,
+    vImport:     ()=>{},
+    vClasses:    renderClasses,
+    vUsers:      renderUsers,
+    vMyClass:    renderMyClass,
+  })[id]?.();
+};
+
+// ── RENDER: DASHBOARD ──
+function renderDashboard() {
+  const clsList = meDoc.role==='staff' ? classes : classes.filter(c=>c.id===meDoc.classId);
+  if (!clsList.length) { $('sumGrid').innerHTML=`<div class="empty"><div class="ei">🏫</div><p>반을 먼저 추가해 주세요.</p></div>`; return; }
+  $('sumGrid').innerHTML = clsList.map(cls => {
+    const allStus = students.filter(s=>s.classId===cls.id);
+    const stus = allStus.filter(s=>!records.find(r=>r.id===s.id)?.withdrawn); // 퇴소 제외
+    const recs = stus.map(s=>records.find(r=>r.id===s.id)||{});
+    const male = stus.filter(s=>s.gender==='남').length;
+    const total = stus.length;
+    const withdrawn = allStus.length - total;
+    const f  = recs.filter(r=>r.form).length;
+    const i2 = recs.filter(r=>r.insurance).length;
+    const id = recs.filter(r=>r.idCard).length;
+    const ml = recs.filter(r=>r.military).length;
+    const teacher = users.find(u=>u.id===cls.teacherUid);
+    const bar = (n,t)=>t?`<div class="sum-bar" style="width:${Math.round(n/t*100)}%"></div>`:`<div class="sum-bar" style="width:0"></div>`;
+    return `<div class="sum-card" onclick="jumpToClass('${cls.id}')">
+      <div class="sum-card-head">
+        <div><div class="sum-cls">${cls.name}반</div><div class="sum-teacher">${teacher?.name||cls.teacherName||'담임 미배정'} · ${total}명${withdrawn?` <span style="opacity:.6;font-size:10px">(퇴소 ${withdrawn})</span>`:''}</div></div>
+      </div>
+      <div class="sum-body">
+        <div class="sum-row"><span class="sum-label">전입신고서</span><div class="sum-bar-wrap">${bar(f,total)}</div><span class="sum-count">${f}/${total}</span></div>
+        <div class="sum-row"><span class="sum-label">건강보험증</span><div class="sum-bar-wrap">${bar(i2,total)}</div><span class="sum-count">${i2}/${total}</span></div>
+        <div class="sum-row"><span class="sum-label">신분증</span><div class="sum-bar-wrap">${bar(id,total)}</div><span class="sum-count">${id}/${total}</span></div>
+        ${male>0?`<div class="sum-row"><span class="sum-label">징병검사</span><div class="sum-bar-wrap">${bar(ml,male)}</div><span class="sum-count">${ml}/${male}</span></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.jumpToClass = id => {
+  activeClsFilter = id;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navItem = meDoc.role==='staff'
+    ? [...document.querySelectorAll('.nav-item')].find(n=>n.textContent.includes('학생'))
+    : document.querySelector('.nav-item');
+  navItem?.classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $(meDoc.role==='staff'?'vStudents':'vMyClass')?.classList.add('active');
+  meDoc.role==='staff' ? renderStudents() : renderMyClass();
+};
+
+// ── RENDER: STUDENTS (staff) ──
+function renderStudents() {
+  // chips
+  const chips = $('clsChips');
+  chips.innerHTML = `<span class="chip ${!activeClsFilter?'active':''}" onclick="setClsFil(null)">전체</span>`
+    + classes.map(c=>`<span class="chip ${activeClsFilter===c.id?'active':''}" onclick="setClsFil('${c.id}')">${c.name}반</span>`).join('');
+
+  const q = $('stuSearch').value.trim().toLowerCase();
+  let list = activeClsFilter ? students.filter(s=>s.classId===activeClsFilter) : students;
+  if (q) list = list.filter(s=>s.name?.toLowerCase().includes(q)||s.studentId?.includes(q));
+  list = sortStudents(list);
+
+  $('stuBody').innerHTML = list.length ? list.map(s=>stuRow(s)).join('') : `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+}
+window.setClsFil = id => { activeClsFilter=id; renderStudents(); };
+
+// ── RENDER: MY CLASS (teacher) ──
+function renderMyClass() {
+  const cls = classes.find(c=>c.id===meDoc.classId);
+  $('myClsName').textContent = cls?`${cls.name}반`:'담당 반 미배정';
+  if (!cls) { $('mySchBanner').innerHTML=''; $('myDash').innerHTML=''; $('myStuBody').innerHTML=''; return; }
+
+  // 스케줄 배너
+  const mySchs = schedules.filter(s=>s.classId===cls.id).sort((a,b)=>a.date>b.date?1:-1);
+  if (mySchs.length) {
+    $('mySchBanner').innerHTML = `<div class="card" style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:var(--t2)">📅 전입신고 일정</span>
+      ${mySchs.map(s=>{
+        const st = schStatus(s);
+        return `<span style="font-size:13px">${s.round} · ${fmtDate(s.date)} ${schStatusBadge(st)}</span>`;
+      }).join('<span style="color:var(--warm2)">|</span>')}
+    </div>`;
+  } else {
+    $('mySchBanner').innerHTML = '';
+  }
+
+  const allStus = students.filter(s=>s.classId===cls.id);
+  const stus = allStus.filter(s=>!records.find(r=>r.id===s.id)?.withdrawn); // 퇴소 제외
+  const recs = stus.map(s=>records.find(r=>r.id===s.id)||{});
+  const total=stus.length, male=stus.filter(s=>s.gender==='남').length;
+  const withdrawn = allStus.length - total;
+  const f=recs.filter(r=>r.form).length, i2=recs.filter(r=>r.insurance).length,
+        id=recs.filter(r=>r.idCard).length, ml=recs.filter(r=>r.military).length;
+  $('myDash').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
+      ${miniStat('전입신고서',f,total)}${miniStat('건강보험증',i2,total)}
+      ${miniStat('신분증',id,total)}${male?miniStat('징병검사',ml,male):''}
+    </div>
+    ${withdrawn?`<div style="font-size:12px;color:var(--t3);margin-top:8px">※ 퇴소 ${withdrawn}명은 인원에서 제외됨</div>`:''}`;
+
+  const q=$('myStuSearch').value.trim().toLowerCase();
+  let list=allStus;
+  if(q) list=list.filter(s=>s.name?.toLowerCase().includes(q)||s.studentId?.includes(q));
+  list = sortStudents(list);
+  $('myStuBody').innerHTML = list.length ? list.map(s=>stuRow(s,true)).join('')
+    : `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+}
+
+// ── 정렬 ──
+let sortCol = 'name';
+let sortAsc = true;
+
+window.setSortCol = col => {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  updateSortHeaders();
+  renderStudents();
+  renderMyClass();
+};
+
+function updateSortHeaders() {
+  const cols = ['studentId','name','gender','round'];
+  cols.forEach(c => {
+    ['sh-'+c, 'msh-'+c].forEach(id => {
+      const el = $(id); if (!el) return;
+      el.textContent = sortCol===c ? (sortAsc ? ' ▲' : ' ▼') : ' ↕';
+      el.style.color = sortCol===c ? 'var(--g500)' : 'var(--t3)';
+    });
+  });
+}
+
+// ── 스케줄 상태 계산 ──
+function schStatus(sch) {
+  if (sch.statusOverride) return sch.statusOverride;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const d = new Date(sch.date); d.setHours(0,0,0,0);
+  const diff = Math.floor((today - d) / 86400000);
+  if (diff < 0)  return '예정';
+  if (diff <= 6) return '진행';
+  return '완료';
+}
+
+function schStatusBadge(status) {
+  const map = { '예정': 'bdg-gray', '진행': 'bdg-gold', '완료': 'bdg-g' };
+  return `<span class="bdg ${map[status]||'bdg-gray'}">${status}</span>`;
+}
+
+// 정렬: 퇴소는 맨 아래, 선택된 컬럼으로 정렬
+function sortStudents(list) {
+  const roundOrder = {'1차':1,'2차':2,'3차':3,'개별완료':4,'':9};
+  return [...list].sort((a, b) => {
+    const aOut = !!records.find(r=>r.id===a.id)?.withdrawn;
+    const bOut = !!records.find(r=>r.id===b.id)?.withdrawn;
+    if (aOut !== bOut) return aOut ? 1 : -1;
+    let cmp = 0;
+    if (sortCol === 'studentId') {
+      cmp = (a.studentId||'').localeCompare(b.studentId||'', 'ko');
+    } else if (sortCol === 'name') {
+      if (a.gender !== b.gender) cmp = a.gender==='남' ? -1 : 1;
+      else cmp = (a.name||'').localeCompare(b.name||'', 'ko');
+    } else if (sortCol === 'gender') {
+      cmp = a.gender === b.gender
+        ? (a.name||'').localeCompare(b.name||'', 'ko')
+        : a.gender==='남' ? -1 : 1;
+    } else if (sortCol === 'round') {
+      const ra = records.find(r=>r.id===a.id)||{};
+      const rb = records.find(r=>r.id===b.id)||{};
+      cmp = (roundOrder[ra.round||'']||9) - (roundOrder[rb.round||'']||9);
+      if (cmp === 0) cmp = (a.name||'').localeCompare(b.name||'', 'ko');
+    }
+    return sortAsc ? cmp : -cmp;
+  });
+}
+
+function miniStat(label, n, t) {
+  const pct = t?Math.round(n/t*100):0;
+  return `<div class="card" style="padding:12px 14px">
+    <div style="font-size:11px;color:var(--t2);margin-bottom:4px">${label}</div>
+    <div style="font-size:20px;font-weight:700;color:var(--g900)">${n}<span style="font-size:13px;font-weight:400;color:var(--t3)">/${t}</span></div>
+    <div style="height:4px;background:var(--warm2);border-radius:3px;margin-top:6px"><div style="height:100%;width:${pct}%;background:var(--g500);border-radius:3px"></div></div>
+  </div>`;
+}
+
+function stuRow(s, isTeacher=false) {
+  const r = records.find(rec=>rec.id===s.id)||{};
+  const cls = classes.find(c=>c.id===s.classId);
+  const isOut = !!r.withdrawn;
+  const dimStyle = isOut ? 'opacity:.4;text-decoration:line-through;' : '';
+  const cb = (field,label) => `<td class="center"><input type="checkbox" class="doc-cb" ${r[field]?'checked':''} ${isOut?'disabled':''} onchange="toggleDoc('${s.id}','${field}',this.checked)" title="${label}"></td>`;
+  const colspan = isTeacher ? 10 : 11;
+  const actions = !isTeacher ? `<td><div class="tbl-actions">
+    <button class="btn btn-ghost btn-sm" onclick="editStudent('${s.id}')">수정</button>
+    <button class="btn btn-red btn-sm" onclick="delStudent('${s.id}','${s.name}')">삭제</button>
+  </div></td>` : '';
+  return `<tr style="${isOut?'background:#fafafa;':''}">
+    <td style="${dimStyle}"><span style="font-family:monospace;font-size:12px">${s.studentId||'-'}</span></td>
+    <td style="${dimStyle}"><strong>${s.name||'-'}</strong>${!isTeacher&&cls?` <span class="bdg bdg-gray" style="margin-left:4px">${cls.name}</span>`:''} ${isOut?'<span class="bdg bdg-red">퇴소</span>':''}</td>
+    <td style="${dimStyle}">${s.gender||'-'}</td>
+    ${cb('form','전입신고서')}${cb('insurance','건강보험증')}${cb('idCard','신분증')}${cb('military','징병검사')}
+    <td>
+      <select class="round-sel" ${isOut?'disabled':''} onchange="updateRound('${s.id}',this.value)">
+        <option value="" ${!r.round?'selected':''}>-</option>
+        ${['1차','2차','3차','개별완료'].map(v=>`<option value="${v}" ${r.round===v?'selected':''}>${v}</option>`).join('')}
+      </select>
+    </td>
+    <td>
+      <input type="text" value="${r.notes||''}" placeholder="비고" ${isOut?'disabled':''} style="border:none;background:transparent;font-family:'Noto Sans KR',sans-serif;font-size:13px;width:100%;outline:none;${dimStyle}" onblur="updateNotes('${s.id}',this.value)" onkeydown="if(event.key==='Enter')this.blur()">
+      ${r.updatedBy?`<div style="font-size:10px;color:var(--t3);margin-top:1px">${r.updatedBy}</div>`:''}
+    </td>
+    <td class="center"><input type="checkbox" class="doc-cb" ${isOut?'checked':''} onchange="toggleWithdrawn('${s.id}',this.checked)" title="퇴소" style="accent-color:var(--red)"></td>
+    ${actions}
+  </tr>`;
+}
+
+// ── DOC TOGGLE ──
+window.toggleDoc = async (studentId, field, val) => {
+  const by = meDoc.name || '직원';
+  try {
+    await setDoc(doc(db,'records',studentId), {[field]:val, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
+    const idx = records.findIndex(r=>r.id===studentId);
+    if(idx>=0) { records[idx][field]=val; records[idx].updatedBy=by; }
+    else records.push({id:studentId,[field]:val,updatedBy:by});
+    if(meDoc.role==='staff') renderDashboard();
+  } catch(e) { toast('저장 실패',true); }
+};
+
+window.updateRound = async (studentId, val) => {
+  const by = meDoc.name || '직원';
+  await setDoc(doc(db,'records',studentId),{round:val,updatedBy:by,updatedAt:serverTimestamp()},{merge:true});
+  const r=records.find(r=>r.id===studentId);
+  if(r) { r.round=val; r.updatedBy=by; } else records.push({id:studentId,round:val,updatedBy:by});
+};
+
+window.toggleWithdrawn = async (studentId, val) => {
+  const by = meDoc.name || '직원';
+  await setDoc(doc(db,'records',studentId),{withdrawn:val,updatedBy:by,updatedAt:serverTimestamp()},{merge:true});
+  const r=records.find(r=>r.id===studentId);
+  if(r) { r.withdrawn=val; r.updatedBy=by; } else records.push({id:studentId,withdrawn:val,updatedBy:by});
+  meDoc.role==='staff' ? renderStudents() : renderMyClass();
+  toast(val ? '퇴소 처리되었습니다.' : '퇴소 취소되었습니다.');
+};
+
+window.updateNotes = async (studentId, val) => {
+  const by = meDoc.name || '직원';
+  await setDoc(doc(db,'records',studentId),{notes:val,updatedBy:by,updatedAt:serverTimestamp()},{merge:true});
+  const r=records.find(r=>r.id===studentId);
+  if(r) { r.notes=val; r.updatedBy=by; } else records.push({id:studentId,notes:val,updatedBy:by});
+};
+
+// ── RENDER: SCHEDULE ──
+function renderSchedule() {
+  if (!classes.length) { $('schGrid').innerHTML=`<div class="empty"><div class="ei">📅</div><p>반을 먼저 추가해 주세요.</p></div>`; return; }
+  $('schGrid').innerHTML = classes.map(cls => {
+    const rounds = schedules.filter(s=>s.classId===cls.id).sort((a,b)=>a.date>b.date?1:-1);
+    return `<div class="sch-card">
+      <div class="sch-head"><div class="sch-cls">${cls.name}반</div><button class="btn btn-gold btn-sm" onclick="openSchModal('${cls.id}')">+ 회차 추가</button></div>
+      ${rounds.length ? `<div class="sch-rounds">${rounds.map(s=>{
+        const st = schStatus(s);
+        return `<div class="sch-round-row">
+          <span class="sch-round-label">${s.round}</span>
+          <span class="sch-round-date">${fmtDate(s.date)}</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <select class="round-sel" onchange="overrideSchStatus('${s.id}',this.value)" title="상태 수동 변경">
+              ${['예정','진행','완료'].map(v=>`<option value="${v}" ${(s.statusOverride||st)===v?'selected':''}>${v}</option>`).join('')}
+            </select>
+            <div class="sch-round-actions">
+              <button class="btn btn-ghost btn-sm" onclick="editSch('${s.id}')">수정</button>
+              <button class="btn btn-red btn-sm" onclick="delSch('${s.id}')">삭제</button>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}</div>`
+      : `<div class="sch-empty">등록된 일정이 없습니다.</div>`}
+    </div>`;
+  }).join('');
+}
+
+window.overrideSchStatus = async (id, val) => {
+  await updateDoc(doc(db,'schedules',id), { statusOverride: val, updatedAt: serverTimestamp() });
+  const s = schedules.find(s=>s.id===id);
+  if(s) s.statusOverride = val;
+  renderSchedule();
+  toast(`상태가 "${val}"(으)로 변경되었습니다.`);
+};
+
+// ── RENDER: CLASSES ──
+function renderClasses() {
+  if (!classes.length) { $('clsList').innerHTML=`<div class="empty"><div class="ei">🏫</div><p>반이 없습니다.</p></div>`; return; }
+  $('clsList').innerHTML=`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>반</th><th>담임</th><th>비밀번호</th><th>학생 수</th><th>스케줄</th><th>담임 링크</th><th></th></tr></thead>
+    <tbody>${classes.map(c=>{
+      const cnt=students.filter(s=>s.classId===c.id&&!records.find(r=>r.id===s.id)?.withdrawn).length;
+      const link=`${location.origin}${location.pathname}?class=${encodeURIComponent(c.name)}`;
+      const mySchs=schedules.filter(s=>s.classId===c.id).sort((a,b)=>a.date>b.date?1:-1);
+      const schInfo = mySchs.length
+        ? mySchs.map(s=>`<span style="margin-right:6px">${s.round} ${schStatusBadge(schStatus(s))}</span>`).join('')
+        : '<span class="bdg bdg-gray">미등록</span>';
+      return `<tr>
+        <td><strong>${c.name}반</strong></td>
+        <td>${c.teacherName||'<span style="color:var(--t3)">미설정</span>'}</td>
+        <td><span style="font-family:monospace;font-size:12px;color:var(--t2)">${c.password||'<span style="color:var(--t3)">미설정</span>'}</span></td>
+        <td>${cnt}명</td>
+        <td>${schInfo}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="copyLink('${link}','${c.name}')">🔗 링크 복사</button></td>
+        <td><div class="tbl-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editCls('${c.id}')">수정</button>
+          <button class="btn btn-red btn-sm" onclick="delCls('${c.id}','${c.name}')">삭제</button>
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ── RENDER: USERS ──
+function renderUsers() {
+  if (!users.length) { $('usrList').innerHTML=`<div class="empty"><div class="ei">👤</div><p>사용자가 없습니다.</p></div>`; return; }
+  $('usrList').innerHTML=`<div class="tbl-wrap"><table class="tbl">
+    <thead><tr><th>이름</th><th>역할</th><th>담당 반</th><th></th></tr></thead>
+    <tbody>${users.map(u=>{
+      const cls=classes.find(c=>c.id===u.classId);
+      return `<tr>
+        <td><strong>${u.name||'-'}</strong></td>
+        <td>${u.role==='staff'?'<span class="bdg bdg-g">직원</span>':'<span class="bdg bdg-gold">담임</span>'}</td>
+        <td>${cls?cls.name+'반':'-'}</td>
+        <td><div class="tbl-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editUsr('${u.id}')">수정</button>
+          ${u.id!==me.uid?`<button class="btn btn-red btn-sm" onclick="delUsr('${u.id}','${u.name}')">삭제</button>`:''}
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+// ── STUDENT CRUD ──
+window.openStuModal = () => {
+  $('stuModalTitle').textContent='학생 추가'; $('stuEditId').value='';
+  $('stuNo').value=$('stuName').value=$('stuNotes').value='';
+  $('stuGender').value='남'; $('stuRound').value='';
+  ['cbForm','cbIns','cbId','cbMil'].forEach(id=>$(id).checked=false);
+  $('stuClass').innerHTML=classes.map(c=>`<option value="${c.id}">${c.name}반</option>`).join('');
+  if(activeClsFilter) $('stuClass').value=activeClsFilter;
+  openOverlay('stuOverlay');
+};
+
+window.editStudent = id => {
+  const s=students.find(s=>s.id===id); if(!s) return;
+  const r=records.find(r=>r.id===id)||{};
+  $('stuModalTitle').textContent='학생 수정'; $('stuEditId').value=id;
+  $('stuClass').innerHTML=classes.map(c=>`<option value="${c.id}" ${c.id===s.classId?'selected':''}>${c.name}반</option>`).join('');
+  $('stuNo').value=s.studentId||''; $('stuName').value=s.name||'';
+  $('stuGender').value=s.gender||'남'; $('stuNotes').value=r.notes||''; $('stuRound').value=r.round||'';
+  $('cbForm').checked=!!r.form; $('cbIns').checked=!!r.insurance;
+  $('cbId').checked=!!r.idCard; $('cbMil').checked=!!r.military;
+  openOverlay('stuOverlay');
+};
+
+window.saveStudent = async () => {
+  const eid=$('stuEditId').value;
+  const classId=$('stuClass').value, studentId=$('stuNo').value.trim(),
+        name=$('stuName').value.trim(), gender=$('stuGender').value;
+  if(!name||!classId) return toast('반과 이름은 필수입니다.',true);
+  const sData={classId,studentId,name,gender,updatedAt:serverTimestamp()};
+  const rData={form:$('cbForm').checked,insurance:$('cbIns').checked,
+               idCard:$('cbId').checked,military:$('cbMil').checked,
+               round:$('stuRound').value,notes:$('stuNotes').value,updatedAt:serverTimestamp()};
+  try {
+    let sid=eid;
+    if(eid) { await updateDoc(doc(db,'students',eid),sData); }
+    else    { const ref=await addDoc(collection(db,'students'),{...sData,createdAt:serverTimestamp()}); sid=ref.id; }
+    await setDoc(doc(db,'records',sid),{...rData,studentId:sid,classId},{merge:true});
+    toast(eid?'수정되었습니다.':'추가되었습니다.');
+    closeOverlay('stuOverlay'); await reload();
+    meDoc.role==='staff'?renderStudents():renderMyClass();
+  } catch(e){ toast('저장 실패: '+e.message,true); }
+};
+
+window.delStudent = async (id,name) => {
+  if(!confirm(`${name} 학생을 삭제할까요?`)) return;
+  await deleteDoc(doc(db,'students',id));
+  await deleteDoc(doc(db,'records',id));
+  toast('삭제되었습니다.'); await reload();
+  meDoc.role==='staff'?renderStudents():renderMyClass();
+};
+
+// ── SCHEDULE CRUD ──
+window.openSchModal = (preClsId='') => {
+  $('schModalTitle').textContent='일정 추가'; $('schEditId').value=''; $('schDate').value=''; $('schNotes').value='';
+  $('schClass').innerHTML=classes.map(c=>`<option value="${c.id}" ${c.id===preClsId?'selected':''}>${c.name}반</option>`).join('');
+  openOverlay('schOverlay');
+};
+
+window.editSch = id => {
+  const s=schedules.find(s=>s.id===id); if(!s) return;
+  $('schModalTitle').textContent='일정 수정'; $('schEditId').value=id;
+  $('schClass').innerHTML=classes.map(c=>`<option value="${c.id}" ${c.id===s.classId?'selected':''}>${c.name}반</option>`).join('');
+  $('schRound').value=s.round||'1차'; $('schDate').value=s.date||''; $('schNotes').value=s.notes||'';
+  openOverlay('schOverlay');
+};
+
+window.saveSchedule = async () => {
+  const eid=$('schEditId').value, classId=$('schClass').value,
+        round=$('schRound').value, date=$('schDate').value, notes=$('schNotes').value;
+  if(!classId||!date) return toast('반과 날짜는 필수입니다.',true);
+  const data={classId,round,date,notes,updatedAt:serverTimestamp()};
+  try {
+    if(eid) await updateDoc(doc(db,'schedules',eid),data);
+    else    await addDoc(collection(db,'schedules'),{...data,createdAt:serverTimestamp()});
+    toast('저장되었습니다.'); closeOverlay('schOverlay'); await reload(); renderSchedule();
+  } catch(e){ toast('저장 실패',true); }
+};
+
+window.delSch = async id => {
+  if(!confirm('이 일정을 삭제할까요?')) return;
+  await deleteDoc(doc(db,'schedules',id)); toast('삭제되었습니다.'); await reload(); renderSchedule();
+};
+
+// ── CLASS CRUD ──
+window.openClsModal = () => {
+  $('clsModalTitle').textContent='반 추가'; $('clsEditId').value='';
+  $('clsName').value=$('clsTeacherName').value='';
+  $('clsPw').value=''; // 이름 입력 후 자동완성
+  $('clsName').oninput = () => {
+    const n = $('clsName').value.trim();
+    $('clsPw').value = n ? `${n}quetta` : '';
+  };
+  openOverlay('clsOverlay');
+};
+
+window.editCls = id => {
+  const c=classes.find(c=>c.id===id); if(!c) return;
+  $('clsModalTitle').textContent='반 수정'; $('clsEditId').value=id;
+  $('clsName').value=c.name; $('clsTeacherName').value=c.teacherName||'';
+  $('clsPw').value=c.password||`${c.name}quetta`;
+  $('clsName').oninput = null; // 수정 시 자동완성 비활성
+  openOverlay('clsOverlay');
+};
+
+// 전체 반 비밀번호 일괄 설정
+window.bulkSetPasswords = async () => {
+  if (!classes.length) return toast('반이 없습니다.', true);
+  if (!confirm(`전체 ${classes.length}개 반의 비밀번호를 "반이름+quetta" 규칙으로 일괄 설정할까요?\n예: A1 → A1quetta`)) return;
+  try {
+    await Promise.all(classes.map(c =>
+      updateDoc(doc(db,'classes',c.id), { password: `${c.name}quetta` })
+    ));
+    toast(`${classes.length}개 반 비밀번호 설정 완료 ✅`);
+    await reload(); renderClasses();
+  } catch(e) { toast('오류가 발생했습니다.', true); }
+};
+
+window.saveClass = async () => {
+  const eid=$('clsEditId').value, name=$('clsName').value.trim(),
+        teacherName=$('clsTeacherName').value.trim(), password=$('clsPw').value.trim();
+  if(!name) return toast('반 이름을 입력해 주세요.',true);
+  const data={name,teacherName,password};
+  try {
+    if(eid) await updateDoc(doc(db,'classes',eid),data);
+    else    await addDoc(collection(db,'classes'),{...data,createdAt:serverTimestamp()});
+    toast('저장되었습니다.'); closeOverlay('clsOverlay'); await reload(); renderClasses();
+  } catch(e){ toast('저장 실패',true); }
+};
+
+window.copyLink = (link, name) => {
+  navigator.clipboard.writeText(link).then(()=>toast(`${name}반 링크가 복사되었습니다. ✅`));
+};
+
+window.delCls = async (id,name) => {
+  if(!confirm(`${name}반을 삭제할까요?`)) return;
+  await deleteDoc(doc(db,'classes',id)); toast('삭제되었습니다.'); await reload(); renderClasses();
+};
+
+// ── USER CRUD ──
+window.openUsrModal = () => {
+  $('usrModalTitle').textContent='계정 등록'; $('usrEditId').value='';
+  $('usrEmail').value=$('usrPw').value=$('usrName').value='';
+  $('usrNewFields').style.display='block'; $('usrRole').value='teacher'; $('usrClsGrp').style.display='block';
+  $('usrCls').innerHTML=`<option value="">선택 안 함</option>`+classes.map(c=>`<option value="${c.id}">${c.name}반</option>`).join('');
+  openOverlay('usrOverlay');
+};
+
+window.editUsr = id => {
+  const u=users.find(u=>u.id===id); if(!u) return;
+  $('usrModalTitle').textContent='계정 수정'; $('usrEditId').value=id;
+  $('usrNewFields').style.display='none'; $('usrName').value=u.name||''; $('usrRole').value=u.role||'staff';
+  $('usrCls').innerHTML=`<option value="">선택 안 함</option>`+classes.map(c=>`<option value="${c.id}" ${c.id===u.classId?'selected':''}>${c.name}반</option>`).join('');
+  $('usrClsGrp').style.display=u.role==='teacher'?'block':'none';
+  openOverlay('usrOverlay');
+};
+
+window.saveUser = async () => {
+  const eid=$('usrEditId').value, name=$('usrName').value.trim(),
+        role=$('usrRole').value, classId=$('usrCls').value;
+  if(!name) return toast('이름을 입력해 주세요.',true);
+  const btn=$('usrSaveBtn'); btn.disabled=true; btn.textContent='저장 중…';
+  try {
+    let uid=eid;
+    if(!eid) {
+      const email=$('usrEmail').value.trim(), pw=$('usrPw').value;
+      if(!email||pw.length<8) { toast('이메일과 비밀번호(8자+)를 확인해 주세요.',true); btn.disabled=false; btn.textContent='저장'; return; }
+      const cred=await createUserWithEmailAndPassword(auth2,email,pw);
+      uid=cred.user.uid; await auth2.signOut();
+    }
+    await setDoc(doc(db,'users',uid),{name,role,classId:classId||null,updatedAt:serverTimestamp()},{merge:true});
+    toast(eid?'수정되었습니다.':'계정이 생성되었습니다. ✅');
+    closeOverlay('usrOverlay'); await reload(); renderUsers();
+  } catch(e){
+    toast(e.code==='auth/email-already-in-use'?'이미 사용 중인 이메일입니다.':'오류: '+e.message,true);
+  }
+  btn.disabled=false; btn.textContent='저장';
+};
+
+window.delUsr = async (id,name) => {
+  if(!confirm(`${name} 계정을 삭제할까요?`)) return;
+  await deleteDoc(doc(db,'users',id)); toast('삭제되었습니다.'); await reload(); renderUsers();
+};
+
+// ── 데이터 일괄 리셋 ──
+window.resetAllData = async () => {
+  if (!confirm('모든 반 명단 데이터가 삭제됩니다. 진행하시겠습니까?')) return;
+  const btn = document.querySelector('#vImport .btn-red');
+  btn.disabled = true; btn.textContent = '삭제 중…';
+  try {
+    const batch = writeBatch(db);
+    students.forEach(s => {
+      batch.delete(doc(db,'students',s.id));
+      batch.delete(doc(db,'records',s.id));
+    });
+    await batch.commit();
+    toast('모든 학생 데이터가 삭제되었습니다.');
+    await reload();
+  } catch(e) { toast('삭제 중 오류가 발생했습니다.', true); }
+  btn.disabled = false; btn.textContent = '🗑 데이터 일괄 리셋';
+};
+window.handleImport = input => {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try {
+      let rows=[];
+      if(file.name.endsWith('.csv')) {
+        const text=new TextDecoder('utf-8').decode(e.target.result);
+        rows=text.split('\n').map(l=>l.split(',').map(c=>c.trim().replace(/\r/,'')));
+      } else {
+        const wb=XLSX.read(e.target.result,{type:'array'});
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      }
+
+      // 헤더 행 찾기 (No. 또는 성명 포함)
+      let start=0;
+      for(let i=0;i<Math.min(rows.length,10);i++){
+        if(rows[i].some(c=>String(c).includes('성명')||String(c).includes('학번'))){ start=i+1; break; }
+      }
+
+      importRows=[];
+      for(let i=start;i<rows.length;i++){
+        const r=rows[i];
+        const classStr=String(r[1]||'').trim();
+        const stuId=String(r[2]||'').trim();
+        const gender=String(r[3]||'').trim();
+        const name=String(r[4]||'').trim();
+        if(!name||!classStr) continue;
+        const chk=v=>String(v||'').trim()==='ㅇ';
+        importRows.push({
+          classStr, studentId:stuId, gender, name,
+          form:chk(r[5]), insurance:chk(r[6]), idCard:chk(r[7]), military:chk(r[8]),
+          notes:String(r[9]||'').trim(), round:String(r[10]||'').trim()
+        });
+      }
+
+      if(!importRows.length){ toast('유효한 데이터가 없습니다.',true); return; }
+
+      $('importCount').textContent=`(${importRows.length}명)`;
+      $('importBody').innerHTML=importRows.map(r=>{
+        const cls=classes.find(c=>c.name===r.classStr);
+        return `<tr>
+          <td>${cls?`<span class="bdg bdg-g">${r.classStr}</span>`:`<span class="bdg bdg-red">${r.classStr}⚠</span>`}</td>
+          <td>${r.studentId}</td><td><strong>${r.name}</strong></td><td>${r.gender}</td>
+          <td class="center">${r.form?'✅':''}</td><td class="center">${r.insurance?'✅':''}</td>
+          <td class="center">${r.idCard?'✅':''}</td><td class="center">${r.military?'✅':''}</td>
+          <td>${r.round}</td><td>${r.notes}</td>
+        </tr>`;
+      }).join('');
+      $('importPreviewCard').style.display='block';
+
+      const missing=[...new Set(importRows.filter(r=>!classes.find(c=>c.name===r.classStr)).map(r=>r.classStr))];
+      if(missing.length) toast(`⚠️ 반 없음: ${missing.join(', ')} — 먼저 반을 추가해 주세요.`,true);
+    } catch(e){ toast('파일 읽기 실패: '+e.message,true); }
+  };
+  file.name.endsWith('.csv') ? reader.readAsArrayBuffer(file) : reader.readAsArrayBuffer(file);
+};
+
+window.commitImport = async () => {
+  const valid=importRows.filter(r=>classes.find(c=>c.name===r.classStr));
+  if(!valid.length) return toast('가져올 수 있는 데이터가 없습니다.',true);
+  const btn=document.querySelector('#importPreviewCard .btn-gold');
+  btn.disabled=true; btn.textContent='저장 중…';
+  try {
+    const batch=writeBatch(db);
+    for(const r of valid){
+      const cls=classes.find(c=>c.name===r.classStr);
+      // 기존 학생 찾기 (같은 반 + 학번 or 이름)
+      const existing=students.find(s=>s.classId===cls.id&&(s.studentId===r.studentId||s.name===r.name));
+      const sid=existing?.id||doc(collection(db,'students')).id;
+      batch.set(doc(db,'students',sid),{classId:cls.id,studentId:r.studentId,name:r.name,gender:r.gender,updatedAt:serverTimestamp()},{merge:true});
+      batch.set(doc(db,'records',sid),{studentId:sid,classId:cls.id,form:r.form,insurance:r.insurance,idCard:r.idCard,military:r.military,round:r.round,notes:r.notes,updatedAt:serverTimestamp()},{merge:true});
+    }
+    await batch.commit();
+    toast(`${valid.length}명 가져오기 완료 ✅`);
+    $('importPreviewCard').style.display='none';
+    $('importFile').value='';
+    importRows=[];
+    await reload();
+  } catch(e){ toast('저장 실패: '+e.message,true); }
+  btn.disabled=false; btn.textContent='💾 가져오기 실행';
+};
+
+// ── EXPORT ──
+window.downloadSample = () => {
+  const wb = XLSX.utils.book_new();
+  const header = ['No.','반','학번','성별','성명','전입신고서','건강보험증','신분증','징병검사','비고','차수'];
+  const sampleRows = classes.length
+    ? classes.flatMap((cls,ci) => [
+        [1, cls.name, '0001', '남', '홍길동', 'ㅇ', 'ㅇ', 'ㅇ', 'ㅇ', '', '1차'],
+        [2, cls.name, '0002', '여', '김영희', 'ㅇ', '',   'ㅇ', '',   '', ''],
+      ])
+    : [
+        [1, 'A1', '0001', '남', '홍길동', 'ㅇ', 'ㅇ', 'ㅇ', 'ㅇ', '', '1차'],
+        [2, 'A1', '0002', '여', '김영희', 'ㅇ', '',   'ㅇ', '',   '', ''],
+        [3, 'X1', '0003', '남', '이철수', '',   '',   '',   '',   '개별 전입완료', '개별완료'],
+      ];
+  const ws = XLSX.utils.aoa_to_sheet([header, ...sampleRows]);
+  ws['!cols'] = [{wch:5},{wch:6},{wch:8},{wch:5},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:16},{wch:8}];
+  // 헤더 스타일 (배경색)
+  XLSX.utils.book_append_sheet(wb, ws, '전입신고');
+  XLSX.writeFile(wb, 'QUETTA_전입신고_샘플.xlsx');
+  toast('샘플 파일이 다운로드되었습니다.');
+};
+window.exportClass = () => {
+  const clsId = meDoc.role==='staff' ? activeClsFilter : meDoc.classId;
+  const list = clsId ? students.filter(s=>s.classId===clsId) : students;
+  const rows = [['반','학번','성별','성명','전입신고서','건강보험증','신분증','징병검사','회차','비고']];
+  list.forEach(s=>{
+    const r=records.find(r=>r.id===s.id)||{};
+    const cls=classes.find(c=>c.id===s.classId);
+    rows.push([cls?.name||'',s.studentId||'',s.gender||'',s.name||'',
+      r.form?'ㅇ':'',r.insurance?'ㅇ':'',r.idCard?'ㅇ':'',r.military?'ㅇ':'',r.round||'',r.notes||'']);
+  });
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:6},{wch:8},{wch:5},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws,'전입신고현황');
+  XLSX.writeFile(wb,`QUETTA_전입신고현황_${new Date().toLocaleDateString('ko')}.xlsx`);
+};
+
+// ── HELPERS ──
+window.toggleClsField = () => { $('usrClsGrp').style.display=$('usrRole').value==='teacher'?'block':'none'; };
+function openOverlay(id){ $(id).classList.add('open'); }
+window.closeOverlay = id => { $(id).classList.remove('open'); };
+function showScreen(id){
+  ['loginScreen','pendingScreen','appScreen'].forEach(s=>{
+    const el=$(s); el.style.display=s===id?(s==='appScreen'?'block':'flex'):'none';
+  });
+}
+function fmtDate(str){
+  if(!str) return '-';
+  const [y,m,d]=str.split('-').map(Number);
+  const day=['일','월','화','수','목','금','토'][new Date(y,m-1,d).getDay()];
+  return `${y}. ${m}. ${d}. (${day})`;
+}
+function toast(msg,err=false){
+  const t=document.createElement('div');
+  t.className=`toast${err?' err':''}`;
+  t.textContent=msg;
+  $('toastWrap').appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+function $(id){ return document.getElementById(id); }
+
+window.renderStudents=renderStudents;
+window.renderMyStudents=renderMyClass;
+
+</script>
+</body>
+</html>
