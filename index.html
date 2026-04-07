@@ -1108,8 +1108,8 @@ function stuRow(s, isTeacher=false) {
     <button class="btn btn-red btn-sm" onclick="delStudent('${s.id}','${s.name}')">삭제</button>
   </div></td>` : '';
   return `<tr style="${isOut?'background:#fafafa;':''}">
-    <td style="${dimStyle}"><span style="font-family:monospace;font-size:12px">${s.studentId||'-'}</span>${isTeacher?(s.subClass||cls?.name)?` <span class="bdg bdg-gray" style="margin-left:4px">${s.subClass||cls?.name}</span>`:'':`<span class="bdg bdg-gray" style="margin-left:4px">${cls?.name||''}</span>`}</td>
-    <td style="${dimStyle}"><strong>${s.name||'-'}</strong>${!isTeacher&&cls?` <span class="bdg bdg-gray" style="margin-left:4px">${cls.name}</span>`:''} ${isOut?'<span class="bdg bdg-red">퇴소</span>':''}</td>
+    <td style="${dimStyle}"><span style="font-family:monospace;font-size:12px">${s.studentId||'-'}</span>${(s.subClass||cls?.name)?` <span class="bdg bdg-gray" style="margin-left:4px">${s.subClass||cls?.name}</span>`:''}</td>
+    <td style="${dimStyle}"><strong>${s.name||'-'}</strong>${!isTeacher&&cls?` <span class="bdg bdg-gray" style="margin-left:4px;opacity:.5">${cls.name}</span>`:''} ${isOut?'<span class="bdg bdg-red">퇴소</span>':''}</td>
     <td style="${dimStyle}">${s.gender||'-'}</td>
     ${cb('form','전입신고서')}${cb('insurance','건강보험증')}${cb('idCard','신분증')}${cb('military','징병검사')}
     <td>
