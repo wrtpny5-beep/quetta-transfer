@@ -922,7 +922,6 @@ window.jumpToClass = id => {
 
 // ── RENDER: STUDENTS (staff) ──
 function renderStudents() {
-  // chips
   const chips = $('clsChips');
   chips.innerHTML = `<span class="chip ${!activeClsFilter?'active':''}" onclick="setClsFil(null)">전체</span>`
     + classes.map(c=>`<span class="chip ${activeClsFilter===c.id?'active':''}" onclick="setClsFil('${c.id}')">${c.name}반</span>`).join('');
@@ -932,7 +931,32 @@ function renderStudents() {
   if (q) list = list.filter(s=>s.name?.toLowerCase().includes(q)||s.studentId?.includes(q));
   list = sortStudents(list);
 
-  $('stuBody').innerHTML = list.length ? list.map(s=>stuRow(s)).join('') : `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+  if (!list.length) {
+    $('stuBody').innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+    return;
+  }
+
+  // subClass가 여러 개인 경우 구분선 삽입
+  const subClasses = [...new Set(list.map(s=>s.subClass).filter(Boolean))];
+  const needGroup = subClasses.length > 1;
+
+  if (needGroup) {
+    // subClass 기준으로 그룹핑
+    const groups = {};
+    list.forEach(s => {
+      const key = s.subClass || '기타';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(s);
+    });
+    let rows = '';
+    Object.keys(groups).sort().forEach(key => {
+      rows += `<tr><td colspan="11" style="background:var(--warm1);color:var(--g900);font-weight:700;font-size:15px;padding:8px 14px;border-top:2px solid var(--warm2)">${key}반</td></tr>`;
+      rows += groups[key].map(s=>stuRow(s)).join('');
+    });
+    $('stuBody').innerHTML = rows;
+  } else {
+    $('stuBody').innerHTML = list.map(s=>stuRow(s)).join('');
+  }
 }
 window.setClsFil = id => { activeClsFilter=id; renderStudents(); };
 
@@ -1617,21 +1641,39 @@ window.downloadSample = () => {
 };
 window.exportClass = () => {
   const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : null);
-  const list = myClassIds
+  let list = myClassIds
     ? students.filter(s => myClassIds.includes(s.classId))
     : (activeClsFilter ? students.filter(s=>s.classId===activeClsFilter) : students);
-  const rows = [['반','학번','성별','성명','전입신고서','건강보험증','신분증','징병검사','회차','비고']];
-  list.forEach(s=>{
-    const r=records.find(r=>r.id===s.id)||{};
-    const cls=classes.find(c=>c.id===s.classId);
-    rows.push([cls?.name||'',s.studentId||'',s.gender||'',s.name||'',
-      r.form?'ㅇ':'',r.insurance?'ㅇ':'',r.idCard?'ㅇ':'',r.military?'ㅇ':'',r.round||'',r.notes||'']);
+
+  // 담임 페이지는 subClass 기준 정렬
+  if (meDoc.role === 'teacher') {
+    list = [...list].sort((a,b) => {
+      const aOut = !!records.find(r=>r.id===a.id)?.withdrawn;
+      const bOut = !!records.find(r=>r.id===b.id)?.withdrawn;
+      if (aOut !== bOut) return aOut ? 1 : -1;
+      const sa = a.subClass||'', sb = b.subClass||'';
+      if (sa !== sb) return sa.localeCompare(sb, 'ko');
+      if (a.gender !== b.gender) return a.gender==='남' ? -1 : 1;
+      return (a.name||'').localeCompare(b.name||'', 'ko');
+    });
+  }
+
+  const chk = v => v===2?'ㅇ':v===1?'△':'';
+  const rows = [['반','학번','성별','성명','전입신고서','건강보험증','신분증','징병검사','회차','비고','퇴소']];
+  list.forEach(s => {
+    const r   = records.find(r=>r.id===s.id)||{};
+    const cls = classes.find(c=>c.id===s.classId);
+    const clsName = meDoc.role==='teacher' ? (s.subClass||cls?.name||'') : (cls?.name||'');
+    rows.push([clsName, s.studentId||'', s.gender||'', s.name||'',
+      chk(r.form), chk(r.insurance), chk(r.idCard), chk(r.military),
+      r.round||'', r.notes||'', r.withdrawn?'퇴소':'']);
   });
-  const wb=XLSX.utils.book_new();
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:6},{wch:8},{wch:5},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8},{wch:16}];
-  XLSX.utils.book_append_sheet(wb,ws,'전입신고현황');
-  XLSX.writeFile(wb,`QUETTA_전입신고현황_${new Date().toLocaleDateString('ko')}.xlsx`);
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:6},{wch:8},{wch:5},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8},{wch:16},{wch:6}];
+  XLSX.utils.book_append_sheet(wb, ws, '전입신고현황');
+  XLSX.writeFile(wb, `QUETTA_전입신고현황_${new Date().toLocaleDateString('ko')}.xlsx`);
 };
 
 // ── 서류 관리 (구글 드라이브 링크 방식) ──
