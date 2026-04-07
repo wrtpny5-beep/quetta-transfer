@@ -16,27 +16,27 @@
   --r:10px; --r2:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t1);min-height:100vh;font-size:14px;line-height:1.5}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t1);min-height:100vh;font-size:16px;line-height:1.5}
 
 /* ── LOGIN ── */
 #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#0D6B64 0%,#2BADA0 100%);padding:20px}
 .login-card{background:var(--white);border-radius:var(--r2);padding:48px 40px;width:100%;max-width:380px;box-shadow:var(--sh2)}
 .login-brand{text-align:center;margin-bottom:32px}
-.login-brand .lb-label{font-size:10px;letter-spacing:3px;color:var(--t3);text-transform:uppercase}
-.login-brand .lb-name{font-family:'Playfair Display',serif;font-size:30px;color:var(--g900);letter-spacing:3px;margin:4px 0 2px}
-.login-brand .lb-sub{font-size:12px;color:var(--t3)}
+.login-brand .lb-label{font-size:12px;letter-spacing:3px;color:var(--t3);text-transform:uppercase}
+.login-brand .lb-name{font-family:'Playfair Display',serif;font-size:32px;color:var(--g900);letter-spacing:3px;margin:4px 0 2px}
+.login-brand .lb-sub{font-size:14px;color:var(--t3)}
 .divider{height:1px;background:var(--warm2);margin:0 0 28px}
 
 /* ── FORMS ── */
 .fg{margin-bottom:14px}
-.fg label{display:block;font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
-.fg input,.fg select,.fg textarea{width:100%;padding:10px 13px;border:1.5px solid var(--warm2);border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--t1);background:var(--white);outline:none;transition:border-color .15s}
+.fg label{display:block;font-size:13px;font-weight:600;color:var(--t2);letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px}
+.fg input,.fg select,.fg textarea{width:100%;padding:10px 13px;border:1.5px solid var(--warm2);border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:16px;color:var(--t1);background:var(--white);outline:none;transition:border-color .15s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--g700)}
 .fg textarea{resize:vertical}
 
 /* ── BUTTONS ── */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 18px;border:none;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
-.btn-primary{background:var(--g900);color:#fff;width:100%;padding:12px;font-size:14px;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 18px;border:none;border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--g900);color:#fff;width:100%;padding:12px;font-size:16px;font-weight:600}
 .btn-primary:hover{background:var(--g700)}
 .btn-gold{background:var(--gold);color:#fff}
 .btn-gold:hover{background:var(--gold2)}
@@ -44,16 +44,16 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 .btn-ghost:hover{background:var(--warm2)}
 .btn-red{background:var(--red-bg);color:var(--red)}
 .btn-red:hover{background:#FECACA}
-.btn-sm{padding:6px 11px;font-size:12px}
+.btn-sm{padding:6px 11px;font-size:14px}
 
-.login-err{color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none}
+.login-err{color:var(--red);font-size:14px;text-align:center;margin-top:10px;display:none}
 
 /* ── PENDING ── */
 #pendingScreen{display:none;min-height:100vh;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
 .pending-card{background:var(--white);border-radius:var(--r2);padding:48px 40px;max-width:460px;box-shadow:var(--sh2)}
-.pending-card h2{font-size:18px;color:var(--g900);margin:12px 0 8px}
-.pending-card p{font-size:13px;color:var(--t2);line-height:1.7}
-.uid-box{font-family:monospace;font-size:12px;background:var(--warm1);padding:6px 10px;border-radius:5px;margin:12px 0 20px;word-break:break-all;color:var(--t2)}
+.pending-card h2{font-size:20px;color:var(--g900);margin:12px 0 8px}
+.pending-card p{font-size:15px;color:var(--t2);line-height:1.7}
+.uid-box{font-family:monospace;font-size:14px;background:var(--warm1);padding:6px 10px;border-radius:5px;margin:12px 0 20px;word-break:break-all;color:var(--t2)}
 
 /* ── LAYOUT ── */
 #appScreen{display:none}
@@ -62,32 +62,32 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 /* Sidebar */
 .sidebar{width:220px;background:var(--g900);color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;flex-shrink:0;overflow-y:auto}
 .sb-head{padding:22px 20px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
-.sb-label{font-size:9px;letter-spacing:2.5px;text-transform:uppercase;opacity:.4;margin-bottom:2px}
-.sb-name{font-family:'Playfair Display',serif;font-size:16px;color:var(--gold);letter-spacing:1.5px}
-.sb-sub{font-size:10px;opacity:.35;margin-top:1px}
+.sb-label{font-size:11px;letter-spacing:2.5px;text-transform:uppercase;opacity:.7;margin-bottom:2px}
+.sb-name{font-family:'Playfair Display',serif;font-size:18px;color:var(--gold);letter-spacing:1.5px;filter:brightness(1.3)}
+.sb-sub{font-size:12px;opacity:.6;margin-top:1px}
 .sb-nav{flex:1;padding:10px 8px}
-.nav-sec{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;opacity:.35;padding:10px 12px 4px}
-.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;cursor:pointer;font-size:13px;opacity:.65;transition:all .15s;margin-bottom:1px}
+.nav-sec{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:.55;padding:10px 12px 4px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;cursor:pointer;font-size:15px;opacity:.85;transition:all .15s;margin-bottom:1px}
 .nav-item:hover{background:rgba(255,255,255,.08);opacity:.9}
 .nav-item.active{background:rgba(201,168,76,.18);opacity:1;color:var(--gold)}
 .sb-foot{padding:12px 8px;border-top:1px solid rgba(255,255,255,.1)}
 .sb-user{padding:6px 12px 8px}
-.sb-user-name{font-size:13px;font-weight:600}
-.sb-user-role{font-size:11px;opacity:.45}
-.btn-logout{width:100%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);border:none;padding:8px;border-radius:7px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:12px;transition:all .15s}
+.sb-user-name{font-size:15px;font-weight:600}
+.sb-user-role{font-size:13px;opacity:.65}
+.btn-logout{width:100%;background:rgba(255,255,255,.08);color:rgba(255,255,255,.65);border:none;padding:8px;border-radius:7px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;font-size:14px;transition:all .15s}
 .btn-logout:hover{background:rgba(255,255,255,.15);color:#fff}
 
 /* Main */
 .main{flex:1;padding:28px 30px;overflow-y:auto;min-width:0}
 .pg-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px;gap:12px}
-.pg-title{font-size:20px;font-weight:700;color:var(--g900)}
-.pg-sub{font-size:12px;color:var(--t2);margin-top:2px}
+.pg-title{font-size:22px;font-weight:700;color:var(--g900)}
+.pg-sub{font-size:14px;color:var(--t2);margin-top:2px}
 .pg-actions{display:flex;gap:8px;flex-shrink:0}
 
 /* Card */
 .card{background:var(--white);border-radius:var(--r);border:1px solid var(--warm2);box-shadow:var(--sh)}
 .card-head{padding:14px 16px 12px;border-bottom:1px solid var(--warm1);display:flex;align-items:center;justify-content:space-between}
-.card-head-title{font-size:14px;font-weight:600}
+.card-head-title{font-size:16px;font-weight:600}
 .card-body{padding:16px}
 
 /* Summary grid */
@@ -95,30 +95,30 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 .sum-card{background:var(--white);border-radius:var(--r);border:1px solid var(--warm2);box-shadow:var(--sh);overflow:hidden;cursor:pointer;transition:box-shadow .15s}
 .sum-card:hover{box-shadow:var(--sh2)}
 .sum-card-head{background:var(--g900);color:#fff;padding:11px 14px;display:flex;align-items:center;justify-content:space-between}
-.sum-cls{font-size:15px;font-weight:700;letter-spacing:.5px}
-.sum-teacher{font-size:11px;opacity:.5}
+.sum-cls{font-size:17px;font-weight:700;letter-spacing:.5px}
+.sum-teacher{font-size:13px;opacity:.5}
 .sum-body{padding:12px 14px}
 .sum-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .sum-row:last-child{margin-bottom:0}
-.sum-label{font-size:12px;color:var(--t2)}
+.sum-label{font-size:14px;color:var(--t2)}
 .sum-bar-wrap{flex:1;margin:0 10px;height:5px;background:var(--warm2);border-radius:3px;overflow:hidden}
 .sum-bar{height:100%;background:var(--g500);border-radius:3px;transition:width .3s}
-.sum-count{font-size:12px;font-weight:600;color:var(--g700);white-space:nowrap}
+.sum-count{font-size:14px;font-weight:600;color:var(--g700);white-space:nowrap}
 
 /* Search/filter bar */
 .tool-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
-.search-input{padding:8px 12px;border:1.5px solid var(--warm2);border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:13px;outline:none;width:200px;transition:border-color .15s}
+.search-input{padding:8px 12px;border:1.5px solid var(--warm2);border-radius:7px;font-family:'Noto Sans KR',sans-serif;font-size:15px;outline:none;width:200px;transition:border-color .15s}
 .search-input:focus{border-color:var(--g700)}
-.chip{padding:5px 13px;border-radius:20px;border:1.5px solid var(--warm2);background:var(--white);font-size:12px;cursor:pointer;transition:all .15s;font-family:'Noto Sans KR',sans-serif}
+.chip{padding:5px 13px;border-radius:20px;border:1.5px solid var(--warm2);background:var(--white);font-size:14px;cursor:pointer;transition:all .15s;font-family:'Noto Sans KR',sans-serif}
 .chip:hover{border-color:var(--g700);color:var(--g700)}
 .chip.active{background:var(--g900);color:#fff;border-color:var(--g900)}
 
 /* Table */
 .tbl-wrap{overflow-x:auto}
 .tbl{width:100%;border-collapse:collapse;min-width:600px}
-.tbl th{text-align:left;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);background:var(--cream);border-bottom:1px solid var(--warm2);white-space:nowrap}
+.tbl th{text-align:left;padding:9px 12px;font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);background:var(--cream);border-bottom:1px solid var(--warm2);white-space:nowrap}
 .tbl th.center,.tbl td.center{text-align:center}
-.tbl td{padding:10px 12px;border-bottom:1px solid var(--warm1);font-size:13px;vertical-align:middle}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--warm1);font-size:15px;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl tr:hover td{background:var(--g50)}
 
@@ -127,50 +127,57 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 .doc-wrap{display:flex;align-items:center;justify-content:center;gap:4px}
 
 /* Badges */
-.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500}
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:12px;font-size:13px;font-weight:500}
 .bdg-g{background:var(--g100);color:var(--g700)}
 .bdg-gold{background:var(--gold-bg);color:var(--gold2)}
 .bdg-gray{background:var(--warm1);color:var(--t2)}
 .bdg-red{background:var(--red-bg);color:var(--red)}
 
 /* Round select inline */
-.round-sel{padding:4px 7px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:12px;outline:none;background:var(--white);cursor:pointer}
+.round-sel{padding:4px 7px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:14px;outline:none;background:var(--white);cursor:pointer}
 
 /* Upload zone */
 .upload-zone{display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--warm2);border-radius:var(--r);padding:40px 20px;cursor:pointer;transition:all .15s;text-align:center}
 .upload-zone:hover{border-color:var(--g700);background:var(--g50)}
-.uz-icon{font-size:36px;margin-bottom:10px}
-.uz-text{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:4px}
-.uz-sub{font-size:12px;color:var(--t3)}
+.uz-icon{font-size:38px;margin-bottom:10px}
+.uz-text{font-size:16px;font-weight:600;color:var(--t1);margin-bottom:4px}
+.uz-sub{font-size:14px;color:var(--t3)}
+
+/* Tri-state doc toggle */
+.doc-toggle{width:26px;height:26px;border-radius:6px;border:2px solid var(--warm2);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;transition:all .15s;background:var(--white)}
+.doc-toggle:hover{border-color:var(--g500)}
+.doc-toggle.s1{background:#C8EDEA;border-color:var(--g500);color:var(--g700)} /* 담임 확인 - 옅은 초록 */
+.doc-toggle.s2{background:var(--g500);border-color:var(--g700);color:#fff}    /* 완료 - 진한 초록 */
+.doc-toggle[disabled]{opacity:.35;cursor:not-allowed}
 
 /* Info box */
-.info-box{background:var(--gold-bg);border-left:3px solid var(--gold);border-radius:7px;padding:11px 14px;font-size:12px;color:var(--t2);line-height:1.7;margin-bottom:16px}
+.info-box{background:var(--gold-bg);border-left:3px solid var(--gold);border-radius:7px;padding:11px 14px;font-size:14px;color:var(--t2);line-height:1.7;margin-bottom:16px}
 
 /* Schedule */
 .sch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .sch-card{background:var(--white);border-radius:var(--r);border:1px solid var(--warm2);box-shadow:var(--sh);overflow:hidden}
 .sch-head{background:var(--g900);color:#fff;padding:11px 14px;display:flex;justify-content:space-between;align-items:center}
-.sch-cls{font-size:15px;font-weight:700}
+.sch-cls{font-size:17px;font-weight:700}
 .sch-rounds{display:flex;flex-direction:column;gap:6px;padding:12px 14px}
 .sch-round-row{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;background:var(--cream);border-radius:7px}
-.sch-round-label{font-size:12px;font-weight:700;color:var(--g900)}
-.sch-round-date{font-size:13px;color:var(--t1)}
+.sch-round-label{font-size:14px;font-weight:700;color:var(--g900)}
+.sch-round-date{font-size:15px;color:var(--t1)}
 .sch-round-actions{display:flex;gap:5px}
-.sch-empty{padding:14px;font-size:12px;color:var(--t3)}
+.sch-empty{padding:14px;font-size:14px;color:var(--t3)}
 
 /* Modal */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
 .overlay.open{display:flex}
 .modal{background:var(--white);border-radius:var(--r2);width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh2)}
 .modal-head{padding:16px 20px 12px;border-bottom:1px solid var(--warm1);display:flex;align-items:center;justify-content:space-between}
-.modal-head-title{font-size:15px;font-weight:700}
-.modal-x{background:none;border:none;font-size:20px;cursor:pointer;color:var(--t3);line-height:1;padding:0}
+.modal-head-title{font-size:17px;font-weight:700}
+.modal-x{background:none;border:none;font-size:22px;cursor:pointer;color:var(--t3);line-height:1;padding:0}
 .modal-body{padding:20px}
 .modal-foot{padding:12px 20px;border-top:1px solid var(--warm1);display:flex;gap:8px;justify-content:flex-end}
 
 /* Toast */
 .toast-wrap{position:fixed;bottom:22px;right:22px;z-index:2000}
-.toast{background:var(--g900);color:#fff;padding:11px 16px;border-radius:7px;font-size:13px;margin-top:6px;box-shadow:var(--sh2);animation:slideUp .2s ease}
+.toast{background:var(--g900);color:#fff;padding:11px 16px;border-radius:7px;font-size:15px;margin-top:6px;box-shadow:var(--sh2);animation:slideUp .2s ease}
 .toast.err{background:var(--red)}
 @keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:none;opacity:1}}
 
@@ -178,8 +185,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 .view.active{display:block}
 
 .empty{text-align:center;padding:48px 20px;color:var(--t3)}
-.empty .ei{font-size:36px;margin-bottom:10px}
-.empty p{font-size:13px}
+.empty .ei{font-size:38px;margin-bottom:10px}
+.empty p{font-size:15px}
 .tbl-actions{display:flex;gap:6px;justify-content:flex-end}
 
 @media(max-width:700px){.sidebar{display:none}.main{padding:16px}}
@@ -217,13 +224,15 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 
     <!-- 담임 폼 -->
     <div id="formTeacher" style="display:none">
-      <div class="fg" id="tcClsGroup">
+      <div class="fg" id="tcClsGroup" style="display:none">
         <label>반 선택</label>
         <select id="tcCls"><option value="">반을 선택하세요</option></select>
       </div>
-      <div class="fg"><label>반 비밀번호</label><input type="password" id="tcPw" placeholder="담당 직원에게 문의"></div>
-      <div class="fg"><label>이름 <span style="font-size:10px;color:var(--t3);font-weight:400">(수정 이력 기록용)</span></label>
-        <input type="text" id="tcName" placeholder="본인 이름 입력" onkeydown="if(event.key==='Enter')doTeacherLogin()">
+      <div class="fg"><label>이름</label>
+        <input type="text" id="tcName" placeholder="본인 이름 입력">
+      </div>
+      <div class="fg"><label>비밀번호</label>
+        <input type="password" id="tcPw" placeholder="담당 직원에게 문의" onkeydown="if(event.key==='Enter')doTeacherLogin()">
       </div>
       <button class="btn btn-primary" onclick="doTeacherLogin()">입장</button>
     </div>
@@ -336,6 +345,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
             <button class="btn btn-ghost" onclick="downloadSample()">📥 샘플 엑셀 다운로드</button>
           </div>
         </div>
+
         <div class="card" style="margin-bottom:16px">
           <div class="card-head"><div class="card-head-title">학생 명단 import</div></div>
           <div class="card-body">
@@ -653,7 +663,8 @@ let me, meDoc;
 let classes=[], students=[], schedules=[], records=[], users=[];
 let activeClsFilter = null;
 let importRows = [];
-let teacherSession = null; // { classId, name } — 담임 세션
+let teacherSession = null; // { classIds: [...], name } — 담임 세션
+let teacherLoginInProgress = false; // 로그인 진행 중 플래그
 
 // ── 로그인 탭 전환 ──
 window.switchLoginTab = tab => {
@@ -702,33 +713,48 @@ window.doLogin = async () => {
 
 // ── 담임 입장 ──
 window.doTeacherLogin = async () => {
-  const err = $('loginErr');
+  const err  = $('loginErr');
   err.style.display = 'none';
-  const classId  = $('tcCls').value;
-  const pw       = $('tcPw').value.trim();
-  const name     = $('tcName').value.trim();
-  if (!classId) { err.style.display='block'; err.textContent='반을 선택해 주세요.'; return; }
-  if (!pw)      { err.style.display='block'; err.textContent='비밀번호를 입력해 주세요.'; return; }
-  if (!name)    { err.style.display='block'; err.textContent='이름을 입력해 주세요.'; return; }
+  const name = $('tcName').value.trim();
+  const pw   = $('tcPw').value.trim().replace(/,/g, '');
+  if (!name) { err.style.display='block'; err.textContent='이름을 입력해 주세요.'; return; }
+  if (!pw)   { err.style.display='block'; err.textContent='비밀번호를 입력해 주세요.'; return; }
 
   try {
-    // teacherSession을 먼저 설정 후 로그인 (onAuthStateChanged 타이밍 이슈 방지)
-    teacherSession = { classId, name };
-
-    // 담임은 탭 닫으면 자동로그아웃 (SESSION 유지)
+    // 1. 익명 로그인 (Firestore 접근용) - onAuthStateChanged는 무시하도록 플래그
+    teacherLoginInProgress = true;
     await setPersistence(auth, browserSessionPersistence);
     await signInAnonymously(auth);
-    // 반 비밀번호 검증
-    const snap = await getDoc(doc(db, 'classes', classId));
-    if (!snap.exists() || snap.data().password?.toLowerCase() !== pw.toLowerCase()) {
-      teacherSession = null;
+
+    // 2. 이름이 일치하는 반 찾기
+    const snap = await getDocs(query(collection(db,'classes'), orderBy('name')));
+    const matched = snap.docs
+      .map(d=>({id:d.id,...d.data()}))
+      .filter(c => c.teacherName?.trim().toLowerCase() === name.toLowerCase());
+
+    if (!matched.length) {
+      teacherLoginInProgress = false;
+      await signOut(auth);
+      err.style.display='block'; err.textContent='이름과 일치하는 반이 없습니다.'; return;
+    }
+
+    // 3. 비밀번호 검증
+    if (matched[0].password?.toLowerCase() !== pw.toLowerCase()) {
+      teacherLoginInProgress = false;
       await signOut(auth);
       err.style.display='block'; err.textContent='비밀번호가 올바르지 않습니다.'; return;
     }
-    meDoc = { role: 'teacher', classId, name };
+
+    // 4. 검증 완료 → 세션 설정 후 앱 진입
+    const classIds = matched.map(c=>c.id);
+    teacherSession = { classIds, name };
+    meDoc = { role: 'teacher', classIds, name };
+    teacherLoginInProgress = false;
     await reload();
     initApp();
   } catch(e) {
+    teacherLoginInProgress = false;
+    teacherSession = null;
     err.style.display='block'; err.textContent=`오류: ${e.code||e.message}`;
   }
 };
@@ -748,12 +774,14 @@ onAuthStateChanged(auth, async user => {
 
   // 담임 세션 (같은 탭 내에서만 유지, 새로고침 시 재로그인 필요)
   if (teacherSession) {
-    meDoc = { role: 'teacher', classId: teacherSession.classId, name: teacherSession.name };
+    meDoc = { role: 'teacher', classIds: teacherSession.classIds, name: teacherSession.name };
     await reload();
     initApp();
     return;
   }
   if (user.isAnonymous) {
+    // 담임 로그인 진행 중이면 무시 (doTeacherLogin이 직접 처리)
+    if (teacherLoginInProgress) return;
     // 세션 없는 익명 → 바로 로그아웃
     teacherSession = null;
     await signOut(auth); return;
@@ -860,10 +888,10 @@ function renderDashboard() {
     const male = stus.filter(s=>s.gender==='남').length;
     const total = stus.length;
     const withdrawn = allStus.length - total;
-    const f  = recs.filter(r=>r.form).length;
-    const i2 = recs.filter(r=>r.insurance).length;
-    const id = recs.filter(r=>r.idCard).length;
-    const ml = recs.filter(r=>r.military).length;
+    const f  = recs.filter(r=>r.form===2).length;
+    const i2 = recs.filter(r=>r.insurance===2).length;
+    const id = recs.filter(r=>r.idCard===2).length;
+    const ml = recs.filter(r=>r.military===2).length;
     const teacher = users.find(u=>u.id===cls.teacherUid);
     const bar = (n,t)=>t?`<div class="sum-bar" style="width:${Math.round(n/t*100)}%"></div>`:`<div class="sum-bar" style="width:0"></div>`;
     return `<div class="sum-card" onclick="jumpToClass('${cls.id}')">
@@ -910,44 +938,81 @@ window.setClsFil = id => { activeClsFilter=id; renderStudents(); };
 
 // ── RENDER: MY CLASS (teacher) ──
 function renderMyClass() {
-  const cls = classes.find(c=>c.id===meDoc.classId);
-  $('myClsName').textContent = cls?`${cls.name}반`:'담당 반 미배정';
-  if (!cls) { $('mySchBanner').innerHTML=''; $('myDash').innerHTML=''; $('myStuBody').innerHTML=''; return; }
+  const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : []);
+  const myClasses  = classes.filter(c => myClassIds.includes(c.id));
+  $('myClsName').textContent = myClasses.length
+    ? myClasses.map(c=>c.name).join(' · ') + '반'
+    : '담당 반 미배정';
+  if (!myClasses.length) { $('mySchBanner').innerHTML=''; $('myDash').innerHTML=''; $('myStuBody').innerHTML=''; return; }
 
   // 스케줄 배너
-  const mySchs = schedules.filter(s=>s.classId===cls.id).sort((a,b)=>a.date>b.date?1:-1);
-  if (mySchs.length) {
-    $('mySchBanner').innerHTML = `<div class="card" style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:12px;font-weight:600;color:var(--t2)">전입신고 일정</span>
+  const mySchs = schedules.filter(s=>myClassIds.includes(s.classId)).sort((a,b)=>a.date>b.date?1:-1);
+  $('mySchBanner').innerHTML = mySchs.length ? `
+    <div class="card" style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:14px;font-weight:600;color:var(--t2)">전입신고 일정</span>
       ${mySchs.map(s=>{
-        const st = schStatus(s);
-        return `<span style="font-size:13px">${s.round} · ${fmtDate(s.date)} ${schStatusBadge(st)}</span>`;
-      }).join('<span style="color:var(--warm2)">|</span>')}
-    </div>`;
-  } else {
-    $('mySchBanner').innerHTML = '';
-  }
+        const cls = classes.find(c=>c.id===s.classId);
+        return `<span style="font-size:15px"><strong>${cls?.name}반</strong> · ${s.round} · ${fmtDate(s.date)} ${schStatusBadge(schStatus(s))}</span>`;
+      }).join('<span style="color:var(--warm2);margin:0 4px">|</span>')}
+    </div>` : '';
 
-  const allStus = students.filter(s=>s.classId===cls.id);
-  const stus = allStus.filter(s=>!records.find(r=>r.id===s.id)?.withdrawn); // 퇴소 제외
-  const recs = stus.map(s=>records.find(r=>r.id===s.id)||{});
-  const total=stus.length, male=stus.filter(s=>s.gender==='남').length;
-  const withdrawn = allStus.length - total;
-  const f=recs.filter(r=>r.form).length, i2=recs.filter(r=>r.insurance).length,
-        id=recs.filter(r=>r.idCard).length, ml=recs.filter(r=>r.military).length;
-  $('myDash').innerHTML=`
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px">
-      ${miniStat('전입신고서',f,total)}${miniStat('건강보험증',i2,total)}
-      ${miniStat('신분증',id,total)}${male?miniStat('징병검사',ml,male):''}
-    </div>
-    ${withdrawn?`<div style="font-size:12px;color:var(--t3);margin-top:8px">※ 퇴소 ${withdrawn}명은 인원에서 제외됨</div>`:''}`;
+  // 반별 통계 + 학생 목록 — subClass(K1,N1 등) 기준으로 그룹핑
+  const q = $('myStuSearch').value.trim().toLowerCase();
+  const allStus = students.filter(s => myClassIds.includes(s.classId));
 
-  const q=$('myStuSearch').value.trim().toLowerCase();
-  let list=allStus;
-  if(q) list=list.filter(s=>s.name?.toLowerCase().includes(q)||s.studentId?.includes(q));
-  list = sortStudents(list);
-  $('myStuBody').innerHTML = list.length ? list.map(s=>stuRow(s,true)).join('')
-    : `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+  // subClass 목록 수집 (없으면 DB 반 이름 사용)
+  const subGroups = {};
+  allStus.forEach(s => {
+    const key = s.subClass || classes.find(c=>c.id===s.classId)?.name || '미분류';
+    if (!subGroups[key]) subGroups[key] = [];
+    subGroups[key].push(s);
+  });
+  const groupKeys = Object.keys(subGroups).sort();
+  const multiGroup = groupKeys.length > 1;
+
+  // 통계 카드
+  let dashHtml = `<div style="display:grid;grid-template-columns:repeat(${Math.min(groupKeys.length,2)},1fr);gap:14px;margin-bottom:4px">`;
+  groupKeys.forEach(key => {
+    const gStus  = subGroups[key];
+    const active = gStus.filter(s=>!records.find(r=>r.id===s.id)?.withdrawn);
+    const recs   = active.map(s=>records.find(r=>r.id===s.id)||{});
+    const total=active.length, male=active.filter(s=>s.gender==='남').length;
+    const withdrawn=gStus.length-total;
+    const f=recs.filter(r=>r.form===2).length, i2=recs.filter(r=>r.insurance===2).length,
+          id=recs.filter(r=>r.idCard===2).length, ml=recs.filter(r=>r.military===2).length;
+    const bar = (label,n,t) => `<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+        <span style="color:var(--t2)">${label}</span><span style="font-weight:600;color:var(--g700)">${n}/${t}</span>
+      </div>
+      <div style="height:5px;background:var(--warm2);border-radius:3px">
+        <div style="height:100%;width:${t?Math.round(n/t*100):0}%;background:var(--g500);border-radius:3px"></div>
+      </div></div>`;
+    dashHtml += `<div class="card" style="overflow:hidden">
+      <div style="background:var(--g900);color:#fff;padding:11px 16px;font-size:16px;font-weight:700">
+        ${key}반 <span style="font-size:13px;font-weight:400;opacity:.6;margin-left:4px">${total}명${withdrawn?` · 퇴소 ${withdrawn}명`:''}</span>
+      </div>
+      <div style="padding:14px 16px">
+        ${bar('전입신고서',f,total)}${bar('건강보험증',i2,total)}
+        ${bar('신분증',id,total)}${male?bar('징병검사',ml,male):''}
+      </div></div>`;
+  });
+  dashHtml += '</div>';
+  $('myDash').innerHTML = dashHtml;
+
+  // 학생 목록
+  let tableRows = '';
+  groupKeys.forEach(key => {
+    let list = subGroups[key];
+    if (q) list = list.filter(s=>s.name?.toLowerCase().includes(q)||s.studentId?.includes(q));
+    list = sortStudents(list);
+    if (multiGroup) {
+      tableRows += `<tr><td colspan="10" style="background:var(--warm1);color:var(--g900);font-weight:700;font-size:14px;padding:8px 14px;border-top:2px solid var(--warm2)">${key}반</td></tr>`;
+    }
+    tableRows += list.length
+      ? list.map(s=>stuRow(s,true)).join('')
+      : `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:16px">학생이 없습니다.</td></tr>`;
+  });
+  $('myStuBody').innerHTML = tableRows || `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
 }
 
 // ── 정렬 ──
@@ -1030,14 +1095,20 @@ function stuRow(s, isTeacher=false) {
   const cls = classes.find(c=>c.id===s.classId);
   const isOut = !!r.withdrawn;
   const dimStyle = isOut ? 'opacity:.4;text-decoration:line-through;' : '';
-  const cb = (field,label) => `<td class="center"><input type="checkbox" class="doc-cb" ${r[field]?'checked':''} ${isOut?'disabled':''} onchange="toggleDoc('${s.id}','${field}',this.checked)" title="${label}"></td>`;
+  const cb = (field, label) => {
+    const val = r[field] || 0;
+    const cls2 = val===1?'s1':val===2?'s2':'';
+    const icon = val===1?'✓':val===2?'✓✓':'';
+    const dis  = isOut ? 'disabled' : '';
+    return `<td class="center"><button class="doc-toggle ${cls2}" ${dis} onclick="cycleDoc('${s.id}','${field}',this)" title="${label} (${val===0?'미확인':val===1?'담임확인':'완료'})">${icon}</button></td>`;
+  };
   const colspan = isTeacher ? 10 : 11;
   const actions = !isTeacher ? `<td><div class="tbl-actions">
     <button class="btn btn-ghost btn-sm" onclick="editStudent('${s.id}')">수정</button>
     <button class="btn btn-red btn-sm" onclick="delStudent('${s.id}','${s.name}')">삭제</button>
   </div></td>` : '';
   return `<tr style="${isOut?'background:#fafafa;':''}">
-    <td style="${dimStyle}"><span style="font-family:monospace;font-size:12px">${s.studentId||'-'}</span></td>
+    <td style="${dimStyle}"><span style="font-family:monospace;font-size:12px">${s.studentId||'-'}</span>${isTeacher?(s.subClass||cls?.name)?` <span class="bdg bdg-gray" style="margin-left:4px">${s.subClass||cls?.name}</span>`:'':`<span class="bdg bdg-gray" style="margin-left:4px">${cls?.name||''}</span>`}</td>
     <td style="${dimStyle}"><strong>${s.name||'-'}</strong>${!isTeacher&&cls?` <span class="bdg bdg-gray" style="margin-left:4px">${cls.name}</span>`:''} ${isOut?'<span class="bdg bdg-red">퇴소</span>':''}</td>
     <td style="${dimStyle}">${s.gender||'-'}</td>
     ${cb('form','전입신고서')}${cb('insurance','건강보험증')}${cb('idCard','신분증')}${cb('military','징병검사')}
@@ -1056,16 +1127,28 @@ function stuRow(s, isTeacher=false) {
   </tr>`;
 }
 
-// ── DOC TOGGLE ──
-window.toggleDoc = async (studentId, field, val) => {
-  const by = meDoc.name || '직원';
+// ── DOC TOGGLE (3단계) ──
+window.cycleDoc = async (studentId, field, btn) => {
+  const by  = meDoc.name || '직원';
+  const cur = records.find(r=>r.id===studentId)?.[field] || 0;
+  const next = cur >= 2 ? 0 : cur + 1;
+
+  // 즉시 UI 업데이트 (낙관적)
+  btn.className = `doc-toggle${next===1?' s1':next===2?' s2':''}`;
+  btn.textContent = next===1?'✓':next===2?'✓✓':'';
+  btn.title = `${btn.title.split(' (')[0]} (${next===0?'미확인':next===1?'담임확인':'완료'})`;
+
   try {
-    await setDoc(doc(db,'records',studentId), {[field]:val, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
+    await setDoc(doc(db,'records',studentId), {[field]:next, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
     const idx = records.findIndex(r=>r.id===studentId);
-    if(idx>=0) { records[idx][field]=val; records[idx].updatedBy=by; }
-    else records.push({id:studentId,[field]:val,updatedBy:by});
-    if(meDoc.role==='staff') renderDashboard();
-  } catch(e) { toast('저장 실패',true); }
+    if(idx>=0) { records[idx][field]=next; records[idx].updatedBy=by; }
+    else records.push({id:studentId,[field]:next,updatedBy:by});
+  } catch(e) {
+    // 실패 시 원래대로 복구
+    btn.className = `doc-toggle${cur===1?' s1':cur===2?' s2':''}`;
+    btn.textContent = cur===1?'✓':cur===2?'✓✓':'';
+    toast('저장 실패',true);
+  }
 };
 
 window.updateRound = async (studentId, val) => {
@@ -1209,8 +1292,16 @@ window.openStuModal = () => {
   $('stuNo').value=$('stuName').value=$('stuNotes').value='';
   $('stuGender').value='남'; $('stuRound').value='';
   ['cbForm','cbIns','cbId','cbMil'].forEach(id=>$(id).checked=false);
-  $('stuClass').innerHTML=classes.map(c=>`<option value="${c.id}">${c.name}반</option>`).join('');
-  if(activeClsFilter) $('stuClass').value=activeClsFilter;
+
+  // 담임이면 자기 반만, 직원이면 전체
+  const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : []);
+  const clsList = meDoc.role==='teacher'
+    ? classes.filter(c => myClassIds.includes(c.id))
+    : classes;
+  $('stuClass').innerHTML = clsList.map(c=>`<option value="${c.id}">${c.name}반</option>`).join('');
+
+  if(meDoc.role==='teacher' && myClassIds.length===1) $('stuClass').value=myClassIds[0];
+  else if(activeClsFilter) $('stuClass').value=activeClsFilter;
   openOverlay('stuOverlay');
 };
 
@@ -1293,7 +1384,7 @@ window.openClsModal = () => {
   $('clsPw').value=''; // 이름 입력 후 자동완성
   $('clsName').oninput = () => {
     const n = $('clsName').value.trim();
-    $('clsPw').value = n ? `${n}quetta` : '';
+    $('clsPw').value = n ? `${n.replace(/,/g,'')}quetta` : '';
   };
   openOverlay('clsOverlay');
 };
@@ -1313,7 +1404,7 @@ window.bulkSetPasswords = async () => {
   if (!confirm(`전체 ${classes.length}개 반의 비밀번호를 "반이름+quetta" 규칙으로 일괄 설정할까요?\n예: A1 → A1quetta`)) return;
   try {
     await Promise.all(classes.map(c =>
-      updateDoc(doc(db,'classes',c.id), { password: `${c.name}quetta` })
+      updateDoc(doc(db,'classes',c.id), { password: `${c.name}quetta`.replace(/,/g, '') })
     ));
     toast(`${classes.length}개 반 비밀번호 설정 완료 ✅`);
     await reload(); renderClasses();
@@ -1324,7 +1415,7 @@ window.saveClass = async () => {
   const eid=$('clsEditId').value, name=$('clsName').value.trim(),
         teacherName=$('clsTeacherName').value.trim(), password=$('clsPw').value.trim();
   if(!name) return toast('반 이름을 입력해 주세요.',true);
-  const data={name,teacherName,password};
+  const data={name, teacherName, password: password.replace(/,/g, '')};
   try {
     if(eid) await updateDoc(doc(db,'classes',eid),data);
     else    await addDoc(collection(db,'classes'),{...data,createdAt:serverTimestamp()});
@@ -1386,6 +1477,23 @@ window.delUsr = async (id,name) => {
   await deleteDoc(doc(db,'users',id)); toast('삭제되었습니다.'); await reload(); renderUsers();
 };
 
+// CSV 반 이름 → DB 반 찾기 (매핑 우선, 없으면 자동 규칙, 없으면 직접 매칭)
+function expandClassName(name) {
+  // "K,N1" → ["K1", "N1"], "O,M2" → ["O2", "M2"]
+  if (!name.includes(',')) return [name];
+  const num     = name.match(/\d+$/)?.[0] || '';
+  const letters = name.replace(/,/g, '').replace(/\d+$/, '');
+  return letters.split('').map(l => l + num);
+}
+
+function findClassByName(csvName) {
+  // 1. 직접 이름 매칭
+  const direct = classes.find(c=>c.name===csvName);
+  if (direct) return direct;
+  // 2. 자동 규칙: DB "K,N1" → ["K1","N1"] 로 확장해서 csvName과 비교
+  return classes.find(c => expandClassName(c.name).includes(csvName));
+}
+
 // ── 데이터 일괄 리셋 ──
 window.resetAllData = async () => {
   if (!confirm('모든 반 명단 데이터가 삭제됩니다. 진행하시겠습니까?')) return;
@@ -1443,7 +1551,7 @@ window.handleImport = input => {
 
       $('importCount').textContent=`(${importRows.length}명)`;
       $('importBody').innerHTML=importRows.map(r=>{
-        const cls=classes.find(c=>c.name===r.classStr);
+        const cls=findClassByName(r.classStr);
         return `<tr>
           <td>${cls?`<span class="bdg bdg-g">${r.classStr}</span>`:`<span class="bdg bdg-red">${r.classStr}⚠</span>`}</td>
           <td>${r.studentId}</td><td><strong>${r.name}</strong></td><td>${r.gender}</td>
@@ -1454,7 +1562,7 @@ window.handleImport = input => {
       }).join('');
       $('importPreviewCard').style.display='block';
 
-      const missing=[...new Set(importRows.filter(r=>!classes.find(c=>c.name===r.classStr)).map(r=>r.classStr))];
+      const missing=[...new Set(importRows.filter(r=>!findClassByName(r.classStr)).map(r=>r.classStr))];
       if(missing.length) toast(`⚠️ 반 없음: ${missing.join(', ')} — 먼저 반을 추가해 주세요.`,true);
     } catch(e){ toast('파일 읽기 실패: '+e.message,true); }
   };
@@ -1462,18 +1570,18 @@ window.handleImport = input => {
 };
 
 window.commitImport = async () => {
-  const valid=importRows.filter(r=>classes.find(c=>c.name===r.classStr));
+  const valid=importRows.filter(r=>findClassByName(r.classStr));
   if(!valid.length) return toast('가져올 수 있는 데이터가 없습니다.',true);
   const btn=document.querySelector('#importPreviewCard .btn-gold');
   btn.disabled=true; btn.textContent='저장 중…';
   try {
     const batch=writeBatch(db);
     for(const r of valid){
-      const cls=classes.find(c=>c.name===r.classStr);
+      const cls=findClassByName(r.classStr);
       // 기존 학생 찾기 (같은 반 + 학번 or 이름)
       const existing=students.find(s=>s.classId===cls.id&&(s.studentId===r.studentId||s.name===r.name));
       const sid=existing?.id||doc(collection(db,'students')).id;
-      batch.set(doc(db,'students',sid),{classId:cls.id,studentId:r.studentId,name:r.name,gender:r.gender,updatedAt:serverTimestamp()},{merge:true});
+      batch.set(doc(db,'students',sid),{classId:cls.id,studentId:r.studentId,name:r.name,gender:r.gender,subClass:r.classStr,updatedAt:serverTimestamp()},{merge:true});
       batch.set(doc(db,'records',sid),{studentId:sid,classId:cls.id,form:r.form,insurance:r.insurance,idCard:r.idCard,military:r.military,round:r.round,notes:r.notes,updatedAt:serverTimestamp()},{merge:true});
     }
     await batch.commit();
@@ -1508,8 +1616,10 @@ window.downloadSample = () => {
   toast('샘플 파일이 다운로드되었습니다.');
 };
 window.exportClass = () => {
-  const clsId = meDoc.role==='staff' ? activeClsFilter : meDoc.classId;
-  const list = clsId ? students.filter(s=>s.classId===clsId) : students;
+  const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : null);
+  const list = myClassIds
+    ? students.filter(s => myClassIds.includes(s.classId))
+    : (activeClsFilter ? students.filter(s=>s.classId===activeClsFilter) : students);
   const rows = [['반','학번','성별','성명','전입신고서','건강보험증','신분증','징병검사','회차','비고']];
   list.forEach(s=>{
     const r=records.find(r=>r.id===s.id)||{};
