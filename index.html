@@ -267,7 +267,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <!-- 현황판 -->
       <div class="view" id="vDashboard">
         <div class="pg-head">
-          <div><div class="pg-title">📊 현황판</div><div class="pg-sub">반별 서류 제출 현황</div></div>
+          <div><div class="pg-title">현황판</div><div class="pg-sub">반별 서류 제출 현황</div></div>
         </div>
         <div class="sum-grid" id="sumGrid"></div>
       </div>
@@ -275,7 +275,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <!-- 학생 관리 -->
       <div class="view" id="vStudents">
         <div class="pg-head">
-          <div><div class="pg-title">👥 학생 관리</div><div class="pg-sub">서류 제출 현황을 업데이트하세요</div></div>
+          <div><div class="pg-title">학생 관리</div><div class="pg-sub">서류 제출 현황을 업데이트하세요</div></div>
           <div class="pg-actions">
             <button class="btn btn-ghost" id="exportBtn" onclick="exportClass()">📤 내보내기</button>
             <button class="btn btn-gold" onclick="openStuModal()">+ 학생 추가</button>
@@ -310,16 +310,27 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <!-- 스케줄 -->
       <div class="view" id="vSchedule">
         <div class="pg-head">
-          <div><div class="pg-title">📅 스케줄 관리</div><div class="pg-sub">반별 회차 일정</div></div>
+          <div><div class="pg-title">스케줄 관리</div><div class="pg-sub">반별 회차 일정</div></div>
           <button class="btn btn-gold" onclick="openSchModal()">+ 일정 추가</button>
         </div>
         <div class="sch-grid" id="schGrid"></div>
+        <div style="margin-top:24px">
+          <div style="font-size:15px;font-weight:700;color:var(--g900);margin-bottom:12px">날짜별 일정</div>
+          <div class="card">
+            <div class="tbl-wrap">
+              <table class="tbl">
+                <thead><tr><th>날짜</th><th>해당 반</th><th>회차</th><th>상태</th></tr></thead>
+                <tbody id="schDateBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Import -->
       <div class="view" id="vImport">
         <div class="pg-head">
-          <div><div class="pg-title">📥 데이터 가져오기</div><div class="pg-sub">기존 CSV 또는 엑셀 파일을 업로드하세요</div></div>
+          <div><div class="pg-title">데이터 가져오기</div><div class="pg-sub">기존 CSV 또는 엑셀 파일을 업로드하세요</div></div>
           <div class="pg-actions">
             <button class="btn btn-red" onclick="resetAllData()">🗑 데이터 일괄 리셋</button>
             <button class="btn btn-ghost" onclick="downloadSample()">📥 샘플 엑셀 다운로드</button>
@@ -358,7 +369,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <!-- 반 관리 -->
       <div class="view" id="vClasses">
         <div class="pg-head">
-          <div><div class="pg-title">🏫 반 관리</div></div>
+          <div><div class="pg-title">반 관리</div></div>
           <div class="pg-actions">
             <button class="btn btn-ghost" onclick="bulkSetPasswords()">🔑 비밀번호 일괄 설정</button>
             <button class="btn btn-gold" onclick="openClsModal()">+ 반 추가</button>
@@ -370,7 +381,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <!-- 사용자 관리 -->
       <div class="view" id="vUsers">
         <div class="pg-head">
-          <div><div class="pg-title">👤 사용자 관리</div></div>
+          <div><div class="pg-title">사용자 관리</div></div>
           <button class="btn btn-gold" onclick="openUsrModal()">+ 계정 등록</button>
         </div>
         <div class="card"><div id="usrList"></div></div>
@@ -379,7 +390,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <!-- 담임: 내 반 현황 -->
       <div class="view" id="vMyClass">
         <div class="pg-head">
-          <div><div class="pg-title">📊 내 반 현황</div><div class="pg-sub" id="myClsName"></div></div>
+          <div><div class="pg-title">내 반 현황</div><div class="pg-sub" id="myClsName"></div></div>
           <div class="pg-actions">
             <button class="btn btn-ghost" onclick="exportClass()">📤 내보내기</button>
             <button class="btn btn-gold" onclick="openStuModal()">+ 학생 추가</button>
@@ -832,7 +843,7 @@ function renderMyClass() {
   const mySchs = schedules.filter(s=>s.classId===cls.id).sort((a,b)=>a.date>b.date?1:-1);
   if (mySchs.length) {
     $('mySchBanner').innerHTML = `<div class="card" style="padding:12px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <span style="font-size:12px;font-weight:600;color:var(--t2)">📅 전입신고 일정</span>
+      <span style="font-size:12px;font-weight:600;color:var(--t2)">전입신고 일정</span>
       ${mySchs.map(s=>{
         const st = schStatus(s);
         return `<span style="font-size:13px">${s.round} · ${fmtDate(s.date)} ${schStatusBadge(st)}</span>`;
@@ -1007,7 +1018,7 @@ window.updateNotes = async (studentId, val) => {
 
 // ── RENDER: SCHEDULE ──
 function renderSchedule() {
-  if (!classes.length) { $('schGrid').innerHTML=`<div class="empty"><div class="ei">📅</div><p>반을 먼저 추가해 주세요.</p></div>`; return; }
+  if (!classes.length) { $('schGrid').innerHTML=`<div class="empty"><div class="ei">📅</div><p>반을 먼저 추가해 주세요.</p></div>`; $('schDateBody').innerHTML=''; return; }
   $('schGrid').innerHTML = classes.map(cls => {
     const rounds = schedules.filter(s=>s.classId===cls.id).sort((a,b)=>a.date>b.date?1:-1);
     return `<div class="sch-card">
@@ -1030,6 +1041,34 @@ function renderSchedule() {
       }).join('')}</div>`
       : `<div class="sch-empty">등록된 일정이 없습니다.</div>`}
     </div>`;
+  }).join('');
+
+  // 날짜별 표
+  const grouped = {};
+  schedules.forEach(s => {
+    if (!s.date) return;
+    if (!grouped[s.date]) grouped[s.date] = [];
+    grouped[s.date].push(s);
+  });
+  const sortedDates = Object.keys(grouped).sort();
+  if (!sortedDates.length) {
+    $('schDateBody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">등록된 일정이 없습니다.</td></tr>`;
+    return;
+  }
+  $('schDateBody').innerHTML = sortedDates.map(date => {
+    const items = grouped[date].sort((a,b)=>(a.round||'').localeCompare(b.round||''));
+    const clsNames = items.map(s => {
+      const cls = classes.find(c=>c.id===s.classId);
+      return cls ? `<span class="bdg bdg-gray" style="margin-right:3px">${cls.name}</span>` : '';
+    }).join('');
+    const rounds = [...new Set(items.map(s=>s.round))].join(', ');
+    const st = schStatus(items[0]);
+    return `<tr>
+      <td><strong>${fmtDate(date)}</strong></td>
+      <td>${clsNames}</td>
+      <td><span class="bdg bdg-gold">${rounds}</span></td>
+      <td>${schStatusBadge(st)}</td>
+    </tr>`;
   }).join('');
 }
 
