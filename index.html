@@ -419,6 +419,65 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
         </div>
       </div>
 
+      <!-- 담임: 전입신고 서류 -->
+      <div class="view" id="vDocs">
+        <div class="pg-head">
+          <div><div class="pg-title">전입신고 서류</div><div class="pg-sub">서류를 확인하고 다운로드하세요</div></div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px" id="docsBtns">
+          <div style="color:var(--t3);font-size:13px">서류를 불러오는 중…</div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-head-title">전입신고 작성 샘플</div></div>
+          <div class="card-body" id="docsSample">
+            <div class="empty"><div class="ei">📄</div><p>등록된 샘플이 없습니다.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 직원: 서류 관리 (구글 드라이브 링크 방식) -->
+      <div class="view" id="vDocsAdmin">
+        <div class="pg-head">
+          <div><div class="pg-title">서류 관리</div><div class="pg-sub">구글 드라이브 공유 링크를 붙여넣으세요</div></div>
+          <button class="btn btn-gold" onclick="saveDocs()">저장</button>
+        </div>
+        <div class="info-box">
+          💡 구글 드라이브에서 파일 우클릭 → 공유 → 링크 복사 → 아래에 붙여넣기<br>
+          저장하면 <strong>직접 다운로드 링크로 자동 변환</strong>돼서 담임이 버튼 누르면 바로 파일이 다운로드됩니다.<br>
+          단, 구글 드라이브 공유 설정이 <strong>"링크가 있는 모든 사용자"</strong>로 되어 있어야 합니다.
+        </div>
+        <div style="display:grid;gap:14px">
+          <div class="card">
+            <div class="card-head"><div class="card-head-title">전입신고 서류 다운로드 링크</div></div>
+            <div class="card-body">
+              <div class="fg" style="margin:0">
+                <label>구글 드라이브 링크</label>
+                <input type="url" id="linkForm" placeholder="https://drive.google.com/...">
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-head-title">건강보험증 서류 다운로드 링크</div></div>
+            <div class="card-body">
+              <div class="fg" style="margin:0">
+                <label>구글 드라이브 링크</label>
+                <input type="url" id="linkIns" placeholder="https://drive.google.com/...">
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div class="card-head-title">전입신고 작성 샘플 (이미지 직접 링크)</div></div>
+            <div class="card-body">
+              <div class="fg">
+                <label>이미지 직접 링크</label>
+                <input type="url" id="linkSample" placeholder="https://drive.google.com/uc?id=...">
+              </div>
+              <div id="samplePreview"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -558,6 +617,7 @@ service cloud.firestore {
     match /schedules/{id}  { allow read: if isAuth(); allow write: if isStaff(); }
     match /students/{id}   { allow read: if isAuth(); allow write: if isAuth(); }
     match /records/{id}    { allow read: if isAuth(); allow write: if isAuth(); }
+    match /settings/{id}   { allow read: if isAuth(); allow write: if isStaff(); }
   }
 }
 */
@@ -750,11 +810,13 @@ function buildNav() {
       <div class="nav-sec">관리</div>
       <div class="nav-item" onclick="switchTab('vImport',this)">데이터 import</div>
       <div class="nav-item" onclick="switchTab('vClasses',this)">반 관리</div>
-      <div class="nav-item" onclick="switchTab('vUsers',this)">사용자</div>`;
+      <div class="nav-item" onclick="switchTab('vUsers',this)">사용자</div>
+      <div class="nav-item" onclick="switchTab('vDocsAdmin',this)">서류 관리</div>`;
   } else {
     nav.innerHTML = `
       <div class="nav-sec">내 반</div>
-      <div class="nav-item" onclick="switchTab('vMyClass',this)">현황 & 학생</div>`;
+      <div class="nav-item" onclick="switchTab('vMyClass',this)">현황 & 학생</div>
+      <div class="nav-item" onclick="switchTab('vDocs',this)">전입신고 서류</div>`;
   }
 }
 
@@ -771,6 +833,8 @@ window.switchTab = (id, el) => {
     vClasses:    renderClasses,
     vUsers:      renderUsers,
     vMyClass:    renderMyClass,
+    vDocs:       renderDocs,
+    vDocsAdmin:  renderDocsAdmin,
   })[id]?.();
 };
 
@@ -1447,6 +1511,87 @@ window.exportClass = () => {
   ws['!cols']=[{wch:6},{wch:8},{wch:5},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:8},{wch:16}];
   XLSX.utils.book_append_sheet(wb,ws,'전입신고현황');
   XLSX.writeFile(wb,`QUETTA_전입신고현황_${new Date().toLocaleDateString('ko')}.xlsx`);
+};
+
+// ── 서류 관리 (구글 드라이브 링크 방식) ──
+let docsSettings = {};
+
+// 구글 드라이브 링크 → 직접 다운로드 링크 변환
+function toDriveDownload(url) {
+  if (!url) return '';
+  // 형식1: /file/d/FILE_ID/view
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m1) return `https://drive.google.com/uc?export=download&id=${m1[1]}`;
+  // 형식2: id=FILE_ID
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2) return `https://drive.google.com/uc?export=download&id=${m2[1]}`;
+  // 이미 변환된 링크거나 다른 URL이면 그대로
+  return url;
+}
+
+// 샘플 이미지 표시용 (export=download 없이)
+function toDriveView(url) {
+  if (!url) return '';
+  const m1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m1) return `https://drive.google.com/uc?id=${m1[1]}`;
+  const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m2) return `https://drive.google.com/uc?id=${m2[1]}`;
+  return url;
+}
+
+async function loadDocs() {
+  const snap = await getDoc(doc(db,'settings','documents'));
+  docsSettings = snap.exists() ? snap.data() : {};
+}
+
+// 담임용 서류 뷰
+async function renderDocs() {
+  if (!Object.keys(docsSettings).length) await loadDocs();
+  const d = docsSettings;
+  $('docsBtns').innerHTML = `
+    ${d.form ? `<a href="${d.form}" target="_blank" class="btn btn-gold">전입신고 서류 다운로드</a>` : '<span class="bdg bdg-gray">전입신고 서류 미등록</span>'}
+    ${d.insurance ? `<a href="${d.insurance}" target="_blank" class="btn btn-ghost">건강보험증 서류 다운로드</a>` : '<span class="bdg bdg-gray">건강보험증 서류 미등록</span>'}
+  `;
+  $('docsSample').innerHTML = d.sample
+    ? `<img src="${d.sample}" style="max-width:100%;border-radius:6px;display:block" alt="전입신고 샘플" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><div style="display:none;color:var(--t3);font-size:13px;padding:10px">이미지를 불러올 수 없습니다. 링크를 확인해 주세요.</div>`
+    : `<div class="empty"><div class="ei">📄</div><p>등록된 샘플이 없습니다.</p></div>`;
+}
+
+// 직원용 서류 관리 뷰
+async function renderDocsAdmin() {
+  if (!Object.keys(docsSettings).length) await loadDocs();
+  const d = docsSettings;
+  $('linkForm').value   = d.formRaw   || '';
+  $('linkIns').value    = d.insRaw    || '';
+  $('linkSample').value = d.sampleRaw || '';
+  updateSamplePreview();
+}
+
+window.saveDocs = async () => {
+  const formRaw   = $('linkForm').value.trim();
+  const insRaw    = $('linkIns').value.trim();
+  const sampleRaw = $('linkSample').value.trim();
+  try {
+    const data = {
+      formRaw, insRaw, sampleRaw,
+      form:     toDriveDownload(formRaw),
+      insurance:toDriveDownload(insRaw),
+      sample:   toDriveView(sampleRaw),
+    };
+    await setDoc(doc(db,'settings','documents'), data, { merge: true });
+    docsSettings = data;
+    toast('저장되었습니다. ✅');
+    updateSamplePreview();
+  } catch(e) { toast('저장 실패: ' + e.message, true); }
+};
+
+window.updateSamplePreview = () => {
+  const url = $('linkSample')?.value.trim();
+  const el  = $('samplePreview'); if(!el) return;
+  const viewUrl = toDriveView(url);
+  el.innerHTML = viewUrl
+    ? `<img src="${viewUrl}" style="max-width:100%;max-height:300px;border-radius:6px;margin-top:10px;display:block" alt="샘플 미리보기">`
+    : '';
 };
 
 // ── HELPERS ──
