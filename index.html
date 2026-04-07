@@ -524,13 +524,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 // ⚠️ Firebase 설정값 교체 필요
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const FB = {
-apiKey: "AIzaSyAtIteJqFLAjZk-OOaj3nkkZVD77vYFZ4o",
-  authDomain: "quetta-2ea94.firebaseapp.com",
-  projectId: "quetta-2ea94",
-  storageBucket: "quetta-2ea94.firebasestorage.app",
-  messagingSenderId: "742368924282",
-  appId: "1:742368924282:web:db7dabb31ff08ea97521c3",
-  measurementId: "G-VXJR0KCTD1"
+  apiKey:            "YOUR_API_KEY",
+  authDomain:        "YOUR_PROJECT_ID.firebaseapp.com",
+  projectId:         "YOUR_PROJECT_ID",
+  storageBucket:     "YOUR_PROJECT_ID.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId:             "YOUR_APP_ID"
 };
 
 /*
@@ -735,18 +734,18 @@ function buildNav() {
   if (meDoc.role==='staff') {
     nav.innerHTML = `
       <div class="nav-sec">현황</div>
-      <div class="nav-item" onclick="switchTab('vDashboard',this)"><span>📊</span> 현황판</div>
-      <div class="nav-item" onclick="switchTab('vStudents',this)"><span>👥</span> 학생 관리</div>
+      <div class="nav-item" onclick="switchTab('vDashboard',this)">현황판</div>
+      <div class="nav-item" onclick="switchTab('vStudents',this)">학생 관리</div>
       <div class="nav-sec">일정</div>
-      <div class="nav-item" onclick="switchTab('vSchedule',this)"><span>📅</span> 스케줄</div>
+      <div class="nav-item" onclick="switchTab('vSchedule',this)">스케줄</div>
       <div class="nav-sec">관리</div>
-      <div class="nav-item" onclick="switchTab('vImport',this)"><span>📥</span> 데이터 import</div>
-      <div class="nav-item" onclick="switchTab('vClasses',this)"><span>🏫</span> 반 관리</div>
-      <div class="nav-item" onclick="switchTab('vUsers',this)"><span>👤</span> 사용자</div>`;
+      <div class="nav-item" onclick="switchTab('vImport',this)">데이터 import</div>
+      <div class="nav-item" onclick="switchTab('vClasses',this)">반 관리</div>
+      <div class="nav-item" onclick="switchTab('vUsers',this)">사용자</div>`;
   } else {
     nav.innerHTML = `
       <div class="nav-sec">내 반</div>
-      <div class="nav-item" onclick="switchTab('vMyClass',this)"><span>📊</span> 현황 & 학생</div>`;
+      <div class="nav-item" onclick="switchTab('vMyClass',this)">현황 & 학생</div>`;
   }
 }
 
