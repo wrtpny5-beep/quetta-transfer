@@ -1663,7 +1663,7 @@ window.exportClass = () => {
   list.forEach(s => {
     const r   = records.find(r=>r.id===s.id)||{};
     const cls = classes.find(c=>c.id===s.classId);
-    const clsName = meDoc.role==='teacher' ? (s.subClass||cls?.name||'') : (cls?.name||'');
+    const clsName = s.subClass || cls?.name || '';
     rows.push([clsName, s.studentId||'', s.gender||'', s.name||'',
       chk(r.form), chk(r.insurance), chk(r.idCard), chk(r.military),
       r.round||'', r.notes||'', r.withdrawn?'퇴소':'']);
