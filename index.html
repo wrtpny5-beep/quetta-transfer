@@ -651,7 +651,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
          browserSessionPersistence, browserLocalPersistence, setPersistence }
   from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-         getDocs, getDoc, setDoc, query, orderBy, writeBatch, serverTimestamp }
+         getDocs, getDoc, setDoc, query, orderBy, writeBatch, serverTimestamp, onSnapshot }
   from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 const app  = initializeApp(FB);
@@ -762,6 +762,7 @@ window.doTeacherLogin = async () => {
 };
 
 window.doLogout = async () => {
+  if (recordsUnsubscribe) { recordsUnsubscribe(); recordsUnsubscribe = null; }
   teacherSession = null;
   await signOut(auth);
 };
@@ -815,18 +816,45 @@ async function populateClassSelect() {
 }
 
 async function reload() {
-  const [cs,ss,sts,rs,us] = await Promise.all([
+  const [cs,ss,sts,us] = await Promise.all([
     getDocs(query(collection(db,'classes'), orderBy('name'))),
     getDocs(query(collection(db,'schedules'), orderBy('date'))),
     getDocs(query(collection(db,'students'), orderBy('classId'))),
-    getDocs(collection(db,'records')),
     getDocs(collection(db,'users')),
   ]);
   classes   = cs.docs.map(d=>({id:d.id,...d.data()}));
   schedules = ss.docs.map(d=>({id:d.id,...d.data()}));
   students  = sts.docs.map(d=>({id:d.id,...d.data()}));
-  records   = rs.docs.map(d=>({id:d.id,...d.data()}));
   users     = us.docs.map(d=>({id:d.id,...d.data()}));
+
+  // records는 최초 1회만 getDocs, 이후 onSnapshot으로 실시간 유지
+  const rsSnap = await getDocs(collection(db,'records'));
+  records = rsSnap.docs.map(d=>({id:d.id,...d.data()}));
+}
+
+// records 실시간 리스너 설정
+let recordsUnsubscribe = null;
+function startRecordsListener() {
+  if (recordsUnsubscribe) recordsUnsubscribe(); // 기존 리스너 해제
+  recordsUnsubscribe = onSnapshot(collection(db,'records'), snap => {
+    snap.docChanges().forEach(change => {
+      const d = {id:change.doc.id,...change.doc.data()};
+      if (change.type === 'added' || change.type === 'modified') {
+        const idx = records.findIndex(r=>r.id===d.id);
+        if (idx>=0) records[idx]=d; else records.push(d);
+      } else if (change.type === 'removed') {
+        records = records.filter(r=>r.id!==d.id);
+      }
+    });
+    // 현재 보이는 화면 자동 갱신
+    if (!meDoc) return;
+    const active = document.querySelector('.view.active');
+    if (!active) return;
+    const id = active.id;
+    if (id==='vDashboard') renderDashboard();
+    else if (id==='vStudents') renderStudents();
+    else if (id==='vMyClass') renderMyClass();
+  });
 }
 
 // ── INIT ──
@@ -836,6 +864,7 @@ function initApp() {
   $('sbRole').textContent = meDoc.role==='staff'?'담당 직원':'담임 교사';
   buildNav();
   updateSortHeaders();
+  startRecordsListener();
   document.querySelector('.nav-item')?.click();
 }
 
