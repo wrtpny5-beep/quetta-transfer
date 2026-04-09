@@ -323,7 +323,10 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <div class="view" id="vSchedule">
         <div class="pg-head">
           <div><div class="pg-title">스케줄 관리</div><div class="pg-sub">반별 회차 일정</div></div>
-          <button class="btn btn-gold" onclick="openSchModal()">+ 일정 추가</button>
+          <div class="pg-actions">
+            <button class="btn btn-ghost" onclick="openAutoSchedule()">⚡ 자동 편성</button>
+            <button class="btn btn-gold" onclick="openSchModal()">+ 일정 추가</button>
+          </div>
         </div>
         <div class="sch-grid" id="schGrid"></div>
         <div style="margin-top:24px">
@@ -331,7 +334,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
           <div class="card">
             <div class="tbl-wrap">
               <table class="tbl">
-                <thead><tr><th>날짜</th><th>해당 반</th><th>회차</th><th>상태</th></tr></thead>
+                <thead><tr><th>날짜</th><th>해당 반 (인원)</th><th>회차</th><th>합계</th><th>상태</th></tr></thead>
                 <tbody id="schDateBody"></tbody>
               </table>
             </div>
@@ -564,7 +567,54 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
   </div>
 </div>
 
-<!-- MODAL: 반 -->
+<!-- MODAL: 자동 편성 -->
+<div class="overlay" id="autoSchOverlay">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-head">
+      <div class="modal-head-title">⚡ 스케줄 자동 편성</div>
+      <button class="modal-x" onclick="closeOverlay('autoSchOverlay')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">
+        A or B + C 조합으로 묶되 1회 최대 120명, 묶인 반(K,N1 등)은 분리되지 않습니다.
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="fg">
+          <label>시작일</label>
+          <input type="date" id="autoStartDate">
+        </div>
+        <div class="fg">
+          <label>회차</label>
+          <select id="autoRound">
+            <option value="1차">1차</option>
+            <option value="2차">2차</option>
+            <option value="3차">3차</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label>진행 요일 (복수 선택)</label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" class="auto-day" value="1"> 월</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" class="auto-day" value="2"> 화</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" class="auto-day" value="3"> 수</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" class="auto-day" value="4"> 목</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:14px;cursor:pointer"><input type="checkbox" class="auto-day" value="5"> 금</label>
+        </div>
+      </div>
+      <!-- 편성 결과 미리보기 -->
+      <div id="autoResult" style="display:none;margin-top:16px">
+        <div style="font-size:14px;font-weight:600;color:var(--g900);margin-bottom:8px">편성 결과</div>
+        <div id="autoResultBody"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" onclick="closeOverlay('autoSchOverlay')">취소</button>
+      <button class="btn btn-ghost" onclick="runAutoSchedule()">편성 미리보기</button>
+      <button class="btn btn-gold" id="autoSaveBtn" style="display:none" onclick="saveAutoSchedule()">스케줄 저장</button>
+    </div>
+  </div>
+</div>
 <div class="overlay" id="clsOverlay">
   <div class="modal">
     <div class="modal-head"><div class="modal-head-title" id="clsModalTitle">반 추가</div><button class="modal-x" onclick="closeOverlay('clsOverlay')">×</button></div>
@@ -573,6 +623,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
       <div class="fg"><label>반 이름</label><input type="text" id="clsName" placeholder="예: A1, X1, K2"></div>
       <div class="fg"><label>담임 이름 <span style="font-size:10px;color:var(--t3)">(담임이 입력할 이름)</span></label><input type="text" id="clsTeacherName" placeholder="예: 송병수"></div>
       <div class="fg"><label>담임 입장 비밀번호</label><input type="text" id="clsPw" placeholder="예: quetta1234"></div>
+      <div class="fg"><label>조편성분류</label>
+        <select id="clsCategory">
+          <option value="">미지정</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeOverlay('clsOverlay')">취소</button>
@@ -1229,7 +1287,121 @@ window.updateNotes = async (studentId, val) => {
   if(r) { r.notes=val; r.updatedBy=by; } else records.push({id:studentId,notes:val,updatedBy:by});
 };
 
-// ── RENDER: SCHEDULE ──
+// ── 자동 편성 ──
+let autoGroups = []; // 편성 결과: [{date, classes:[{cls,count}]}]
+
+window.openAutoSchedule = () => {
+  $('autoStartDate').value = '';
+  $('autoResult').style.display = 'none';
+  $('autoSaveBtn').style.display = 'none';
+  autoGroups = [];
+  openOverlay('autoSchOverlay');
+};
+
+window.runAutoSchedule = () => {
+  const startDate = $('autoStartDate').value;
+  const round     = $('autoRound').value;
+  const days      = [...document.querySelectorAll('.auto-day:checked')].map(el=>+el.value);
+  if (!startDate) return toast('시작일을 선택해 주세요.', true);
+  if (!days.length) return toast('진행 요일을 선택해 주세요.', true);
+
+  // 조편성: teacherName 기준으로 묶인 반 그룹 생성
+  const teacherGroups = {};
+  classes.forEach(c => {
+    const key = c.teacherName || c.id;
+    if (!teacherGroups[key]) teacherGroups[key] = { cls: [], category: c.category||'', count: 0 };
+    teacherGroups[key].cls.push(c);
+    teacherGroups[key].count += students.filter(s=>s.classId===c.id&&!records.find(r=>r.id===s.id)?.withdrawn).length;
+    // 카테고리는 첫 번째 반 기준
+    if (!teacherGroups[key].category) teacherGroups[key].category = c.category||'';
+  });
+
+  const groups = Object.values(teacherGroups);
+  const catA = groups.filter(g=>g.category==='A');
+  const catB = groups.filter(g=>g.category==='B');
+  const catC = groups.filter(g=>g.category==='C');
+  const rest = groups.filter(g=>!['A','B','C'].includes(g.category));
+
+  // A or B + C 매칭, 120명 제한
+  const slots = [];
+  const usedC = new Set();
+
+  const match = (senior) => {
+    let slot = { groups: [senior], total: senior.count };
+    const available = catC.filter(g=>!usedC.has(g));
+    for (const c of available) {
+      if (slot.total + c.count <= 120) {
+        slot.groups.push(c);
+        slot.total += c.count;
+        usedC.add(c);
+        break;
+      }
+    }
+    slots.push(slot);
+  };
+
+  [...catA, ...catB].forEach(g => match(g));
+  // 매칭 안 된 C 처리
+  catC.filter(g=>!usedC.has(g)).forEach(g => slots.push({groups:[g], total:g.count}));
+  // 미분류 처리
+  rest.forEach(g => slots.push({groups:[g], total:g.count}));
+
+  // 날짜 배정
+  const getNextDate = (from, dayNums) => {
+    const d = new Date(from);
+    d.setDate(d.getDate()+1);
+    for (let i=0; i<14; i++) {
+      if (dayNums.includes(d.getDay())) return d.toISOString().slice(0,10);
+      d.setDate(d.getDate()+1);
+    }
+    return null;
+  };
+
+  let curDate = startDate;
+  autoGroups = slots.map((slot, idx) => {
+    if (idx > 0) curDate = getNextDate(curDate, days) || curDate;
+    return { date: curDate, round, groups: slot.groups, total: slot.total };
+  });
+
+  // 결과 렌더
+  $('autoResultBody').innerHTML = autoGroups.map((g, i) => `
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--cream);border-radius:8px;margin-bottom:8px">
+      <input type="date" value="${g.date}" id="auto-date-${i}" style="padding:6px 10px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:14px" onchange="autoGroups[${i}].date=this.value">
+      <div style="flex:1">
+        ${g.groups.map(gr=>`<span class="bdg bdg-gray" style="margin-right:4px">${gr.cls.map(c=>c.name).join('·')}반</span>`).join('')}
+        <span class="bdg ${g.groups.some(gr=>gr.category==='A')?'bdg-g':g.groups.some(gr=>gr.category==='B')?'bdg-gold':'bdg-red'}">${[...new Set(g.groups.map(gr=>gr.category||'?'))].join('+')}</span>
+      </div>
+      <span style="font-size:13px;color:var(--t2);white-space:nowrap">${g.total}명</span>
+    </div>`).join('');
+
+  $('autoResult').style.display = 'block';
+  $('autoSaveBtn').style.display = 'inline-flex';
+};
+
+window.saveAutoSchedule = async () => {
+  if (!autoGroups.length) return;
+  const btn = $('autoSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중…';
+  try {
+    const ops = [];
+    autoGroups.forEach((g, i) => {
+      const date = $(`auto-date-${i}`)?.value || g.date;
+      g.groups.forEach(gr => {
+        gr.cls.forEach(c => {
+          const existing = schedules.find(s=>s.classId===c.id&&s.round===g.round);
+          const data = { classId:c.id, round:g.round, date, notes:'', updatedAt:serverTimestamp() };
+          if (existing) ops.push(updateDoc(doc(db,'schedules',existing.id), data));
+          else ops.push(addDoc(collection(db,'schedules'), {...data, createdAt:serverTimestamp()}));
+        });
+      });
+    });
+    await Promise.all(ops);
+    toast(`${ops.length}개 반 스케줄 저장 완료 ✅`);
+    closeOverlay('autoSchOverlay');
+    await reload(); renderSchedule();
+  } catch(e) { toast('저장 실패: '+e.message, true); }
+  btn.disabled = false; btn.textContent = '스케줄 저장';
+};
 function renderSchedule() {
   if (!classes.length) { $('schGrid').innerHTML=`<div class="empty"><div class="ei">📅</div><p>반을 먼저 추가해 주세요.</p></div>`; $('schDateBody').innerHTML=''; return; }
   $('schGrid').innerHTML = classes.map(cls => {
@@ -1272,14 +1444,20 @@ function renderSchedule() {
     const items = grouped[date].sort((a,b)=>(a.round||'').localeCompare(b.round||''));
     const clsNames = items.map(s => {
       const cls = classes.find(c=>c.id===s.classId);
-      return cls ? `<span class="bdg bdg-gray" style="margin-right:3px">${cls.name}</span>` : '';
+      const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
+      return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
     }).join('');
+    const total = items.reduce((sum, s) => {
+      const cls = classes.find(c=>c.id===s.classId);
+      return sum + (cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0);
+    }, 0);
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
     const st = schStatus(items[0]);
     return `<tr>
       <td><strong>${fmtDate(date)}</strong></td>
       <td>${clsNames}</td>
       <td><span class="bdg bdg-gold">${rounds}</span></td>
+      <td><strong style="color:var(--g700)">${total}명</strong></td>
       <td>${schStatusBadge(st)}</td>
     </tr>`;
   }).join('');
@@ -1297,7 +1475,7 @@ window.overrideSchStatus = async (id, val) => {
 function renderClasses() {
   if (!classes.length) { $('clsList').innerHTML=`<div class="empty"><div class="ei">🏫</div><p>반이 없습니다.</p></div>`; return; }
   $('clsList').innerHTML=`<div class="tbl-wrap"><table class="tbl">
-    <thead><tr><th>반</th><th>담임</th><th>비밀번호</th><th>학생 수</th><th>스케줄</th><th>담임 링크</th><th></th></tr></thead>
+    <thead><tr><th>반</th><th>담임</th><th>조편성</th><th>비밀번호</th><th>학생 수</th><th>스케줄</th><th>담임 링크</th><th></th></tr></thead>
     <tbody>${classes.map(c=>{
       const cnt=students.filter(s=>s.classId===c.id&&!records.find(r=>r.id===s.id)?.withdrawn).length;
       const link=`${location.origin}${location.pathname}?class=${encodeURIComponent(c.name)}`;
@@ -1305,10 +1483,17 @@ function renderClasses() {
       const schInfo = mySchs.length
         ? mySchs.map(s=>`<span style="margin-right:6px">${s.round} ${schStatusBadge(schStatus(s))}</span>`).join('')
         : '<span class="bdg bdg-gray">미등록</span>';
+      const catColor = c.category==='A'?'bdg-g':c.category==='B'?'bdg-gold':'bdg-red';
       return `<tr>
         <td><strong>${c.name}반</strong></td>
         <td>${c.teacherName||'<span style="color:var(--t3)">미설정</span>'}</td>
-        <td><span style="font-family:monospace;font-size:12px;color:var(--t2)">${c.password||'<span style="color:var(--t3)">미설정</span>'}</span></td>
+        <td>
+          <select class="round-sel" onchange="updateClassCategory('${c.id}',this.value)">
+            <option value="" ${!c.category?'selected':''}>-</option>
+            ${['A','B','C'].map(v=>`<option value="${v}" ${c.category===v?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </td>
+        <td><span style="font-family:monospace;font-size:12px;color:var(--t2)">${c.password||'미설정'}</span></td>
         <td>${cnt}명</td>
         <td>${schInfo}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="copyLink('${link}','${c.name}')">🔗 링크 복사</button></td>
@@ -1436,7 +1621,8 @@ window.delSch = async id => {
 window.openClsModal = () => {
   $('clsModalTitle').textContent='반 추가'; $('clsEditId').value='';
   $('clsName').value=$('clsTeacherName').value='';
-  $('clsPw').value=''; // 이름 입력 후 자동완성
+  $('clsCategory').value='';
+  $('clsPw').value='';
   $('clsName').oninput = () => {
     const n = $('clsName').value.trim();
     $('clsPw').value = n ? `${n.replace(/,/g,'')}quetta` : '';
@@ -1449,7 +1635,8 @@ window.editCls = id => {
   $('clsModalTitle').textContent='반 수정'; $('clsEditId').value=id;
   $('clsName').value=c.name; $('clsTeacherName').value=c.teacherName||'';
   $('clsPw').value=c.password||`${c.name}quetta`;
-  $('clsName').oninput = null; // 수정 시 자동완성 비활성
+  $('clsCategory').value=c.category||'';
+  $('clsName').oninput = null;
   openOverlay('clsOverlay');
 };
 
@@ -1468,9 +1655,10 @@ window.bulkSetPasswords = async () => {
 
 window.saveClass = async () => {
   const eid=$('clsEditId').value, name=$('clsName').value.trim(),
-        teacherName=$('clsTeacherName').value.trim(), password=$('clsPw').value.trim();
+        teacherName=$('clsTeacherName').value.trim(), password=$('clsPw').value.trim(),
+        category=$('clsCategory').value;
   if(!name) return toast('반 이름을 입력해 주세요.',true);
-  const data={name, teacherName, password: password.replace(/,/g, '')};
+  const data={name, teacherName, password: password.replace(/,/g, ''), category};
   try {
     if(eid) await updateDoc(doc(db,'classes',eid),data);
     else    await addDoc(collection(db,'classes'),{...data,createdAt:serverTimestamp()});
@@ -1478,6 +1666,12 @@ window.saveClass = async () => {
   } catch(e){ toast('저장 실패',true); }
 };
 
+window.updateClassCategory = async (id, val) => {
+  await updateDoc(doc(db,'classes',id), { category: val });
+  const c = classes.find(c=>c.id===id);
+  if(c) c.category = val;
+  toast('저장되었습니다.');
+};
 window.copyLink = (link, name) => {
   navigator.clipboard.writeText(link).then(()=>toast(`${name}반 링크가 복사되었습니다. ✅`));
 };
