@@ -435,6 +435,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
         </div>
       </div>
 
+      <!-- 담임: 전체 스케줄 -->
+      <div class="view" id="vAllSchedule">
+        <div class="pg-head">
+          <div><div class="pg-title">전체 스케줄</div><div class="pg-sub">날짜별 전입신고 일정</div></div>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>날짜</th><th>해당 반 (인원)</th><th>회차</th><th>합계</th><th>상태</th></tr></thead>
+              <tbody id="teacherSchDateBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- 담임: 전입신고 서류 -->
       <div class="view" id="vDocs">
         <div class="pg-head">
@@ -944,6 +959,7 @@ function buildNav() {
     nav.innerHTML = `
       <div class="nav-sec">내 반</div>
       <div class="nav-item" onclick="switchTab('vMyClass',this)">현황 & 학생</div>
+      <div class="nav-item" onclick="switchTab('vAllSchedule',this)">전체 스케줄</div>
       <div class="nav-item" onclick="switchTab('vDocs',this)">전입신고 서류</div>`;
   }
 }
@@ -961,6 +977,7 @@ window.switchTab = (id, el) => {
     vClasses:    renderClasses,
     vUsers:      renderUsers,
     vMyClass:    renderMyClass,
+    vAllSchedule: renderAllSchedule,
     vDocs:       renderDocs,
     vDocsAdmin:  renderDocsAdmin,
   })[id]?.();
@@ -1287,7 +1304,41 @@ window.updateNotes = async (studentId, val) => {
   if(r) { r.notes=val; r.updatedBy=by; } else records.push({id:studentId,notes:val,updatedBy:by});
 };
 
-// ── 자동 편성 ──
+// 담임용 전체 스케줄 (날짜별 표만)
+function renderAllSchedule() {
+  const grouped = {};
+  schedules.forEach(s => {
+    if (!s.date) return;
+    if (!grouped[s.date]) grouped[s.date] = [];
+    grouped[s.date].push(s);
+  });
+  const sortedDates = Object.keys(grouped).sort((a,b) => a.localeCompare(b));
+  if (!sortedDates.length) {
+    $('teacherSchDateBody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--t3);padding:20px">등록된 일정이 없습니다.</td></tr>`;
+    return;
+  }
+  $('teacherSchDateBody').innerHTML = sortedDates.map(date => {
+    const items = grouped[date].sort((a,b)=>(a.round||'').localeCompare(b.round||''));
+    const clsNames = items.map(s => {
+      const cls = classes.find(c=>c.id===s.classId);
+      const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
+      return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
+    }).join('');
+    const total = items.reduce((sum, s) => {
+      const cls = classes.find(c=>c.id===s.classId);
+      return sum + (cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0);
+    }, 0);
+    const rounds = [...new Set(items.map(s=>s.round))].join(', ');
+    const st = schStatus(items[0]);
+    return `<tr>
+      <td><strong>${fmtDate(date)}</strong></td>
+      <td>${clsNames}</td>
+      <td><span class="bdg bdg-gold">${rounds}</span></td>
+      <td><strong style="color:var(--g700)">${total}명</strong></td>
+      <td>${schStatusBadge(st)}</td>
+    </tr>`;
+  }).join('');
+}
 let autoGroups = []; // 편성 결과: [{date, classes:[{cls,count}]}]
 
 window.openAutoSchedule = () => {
@@ -1447,22 +1498,40 @@ function renderSchedule() {
       const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
       return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
     }).join('');
-    const total = items.reduce((sum, s) => {
+    const autoTotal = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       return sum + (cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0);
     }, 0);
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
     const st = schStatus(items[0]);
+    const is1st = items.some(s=>s.round==='1차');
+    // 수동 합계: 같은 날짜 스케줄 중 manualTotal이 있으면 사용
+    const manualTotal = items.find(s=>s.manualTotal!=null)?.manualTotal;
+    const schId = items[0]?.id; // 저장 기준 id
+    const totalCell = is1st
+      ? `<strong style="color:var(--g700)">${autoTotal}명</strong>`
+      : `<input type="number" min="0" value="${manualTotal??''}" placeholder="${autoTotal}" 
+           style="width:70px;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:14px;font-family:'Noto Sans KR',sans-serif"
+           onchange="saveManualTotal('${schId}',this.value,${autoTotal})"
+           title="직접 입력 (빈칸이면 자동계산)">명`;
+    const displayTotal = (!is1st && manualTotal!=null) ? manualTotal : autoTotal;
     return `<tr>
       <td><strong>${fmtDate(date)}</strong></td>
       <td>${clsNames}</td>
       <td><span class="bdg bdg-gold">${rounds}</span></td>
-      <td><strong style="color:var(--g700)">${total}명</strong></td>
+      <td>${totalCell}</td>
       <td>${schStatusBadge(st)}</td>
     </tr>`;
   }).join('');
 }
 
+window.saveManualTotal = async (schId, val, autoTotal) => {
+  const num = val==='' ? null : parseInt(val);
+  await updateDoc(doc(db,'schedules',schId), { manualTotal: num, updatedAt: serverTimestamp() });
+  const s = schedules.find(s=>s.id===schId);
+  if(s) s.manualTotal = num;
+  toast('저장되었습니다.');
+};
 window.overrideSchStatus = async (id, val) => {
   await updateDoc(doc(db,'schedules',id), { statusOverride: val, updatedAt: serverTimestamp() });
   const s = schedules.find(s=>s.id===id);
