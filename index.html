@@ -227,7 +227,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 
     <!-- 담임 폼 -->
     <div id="formTeacher" style="display:none">
-      <div class="fg" id="tcClsGroup" style="display:none">
+      <div class="fg" id="tcClsGroup">
         <label>반 선택</label>
         <select id="tcCls"><option value="">반을 선택하세요</option></select>
       </div>
@@ -791,37 +791,39 @@ window.doLogin = async () => {
 window.doTeacherLogin = async () => {
   const err  = $('loginErr');
   err.style.display = 'none';
-  const name = $('tcName').value.trim();
-  const pw   = $('tcPw').value.trim().replace(/,/g, '');
-  if (!name) { err.style.display='block'; err.textContent='이름을 입력해 주세요.'; return; }
-  if (!pw)   { err.style.display='block'; err.textContent='비밀번호를 입력해 주세요.'; return; }
+  const classId = $('tcCls').value;
+  const name    = $('tcName').value.trim();
+  const pw      = $('tcPw').value.trim().replace(/,/g, '');
+  if (!classId) { err.style.display='block'; err.textContent='반을 선택해 주세요.'; return; }
+  if (!name)    { err.style.display='block'; err.textContent='이름을 입력해 주세요.'; return; }
+  if (!pw)      { err.style.display='block'; err.textContent='비밀번호를 입력해 주세요.'; return; }
 
   try {
-    // 1. 익명 로그인 (Firestore 접근용) - onAuthStateChanged는 무시하도록 플래그
     teacherLoginInProgress = true;
     await setPersistence(auth, browserSessionPersistence);
     await signInAnonymously(auth);
 
-    // 2. 이름이 일치하는 반 찾기
+    // 선택한 반 정보 가져오기
     const snap = await getDocs(query(collection(db,'classes'), orderBy('name')));
-    const matched = snap.docs
-      .map(d=>({id:d.id,...d.data()}))
-      .filter(c => c.teacherName?.trim().toLowerCase() === name.toLowerCase());
+    const allClasses = snap.docs.map(d=>({id:d.id,...d.data()}));
+    const selectedCls = allClasses.find(c=>c.id===classId);
 
-    if (!matched.length) {
+    // 1. 선택한 반의 담임 이름과 입력한 이름 일치 확인
+    if (!selectedCls || selectedCls.teacherName?.trim().toLowerCase() !== name.toLowerCase()) {
       teacherLoginInProgress = false;
       await signOut(auth);
-      err.style.display='block'; err.textContent='이름과 일치하는 반이 없습니다.'; return;
+      err.style.display='block'; err.textContent='반과 이름이 일치하지 않습니다.'; return;
     }
 
-    // 3. 비밀번호 검증
-    if (matched[0].password?.toLowerCase() !== pw.toLowerCase()) {
+    // 2. 비밀번호 검증
+    if (selectedCls.password?.toLowerCase() !== pw.toLowerCase()) {
       teacherLoginInProgress = false;
       await signOut(auth);
       err.style.display='block'; err.textContent='비밀번호가 올바르지 않습니다.'; return;
     }
 
-    // 4. 검증 완료 → 세션 설정 후 앱 진입
+    // 3. 같은 담임 이름으로 등록된 반 모두 찾기 (K,N1 묶음 처리)
+    const matched = allClasses.filter(c => c.teacherName?.trim().toLowerCase() === name.toLowerCase());
     const classIds = matched.map(c=>c.id);
     teacherSession = { classIds, name };
     meDoc = { role: 'teacher', classIds, name };
