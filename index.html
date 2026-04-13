@@ -1317,6 +1317,7 @@ function renderAllSchedule() {
     $('teacherSchDateBody').innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--t3);padding:20px">등록된 일정이 없습니다.</td></tr>`;
     return;
   }
+  const today = new Date().toISOString().slice(0,10);
   $('teacherSchDateBody').innerHTML = sortedDates.map(date => {
     const items = grouped[date].sort((a,b)=>(a.round||'').localeCompare(b.round||''));
     const clsNames = items.map(s => {
@@ -1324,17 +1325,35 @@ function renderAllSchedule() {
       const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
       return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
     }).join('');
-    const total = items.reduce((sum, s) => {
+    const autoTotal = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       return sum + (cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0);
     }, 0);
+    const is1st = items.some(s=>s.round==='1차');
+    const isPast = date < today;
+    const manualTotal = items.find(s=>s.manualTotal!=null)?.manualTotal;
+    const completedTotal = items.reduce((sum, s) => {
+      const cls = classes.find(c=>c.id===s.classId);
+      if (!cls) return sum;
+      return sum + students.filter(st => {
+        if (st.classId !== cls.id) return false;
+        const r = records.find(r=>r.id===st.id)||{};
+        if (r.withdrawn) return false;
+        const male = st.gender === '남';
+        return r.form===2 && r.insurance===2 && r.idCard===2 && (!male || r.military===2);
+      }).length;
+    }, 0);
+    const displayTotal = is1st
+      ? isPast ? `<strong style="color:var(--g700)">${completedTotal}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${autoTotal}명</span>`
+               : `<strong style="color:var(--g700)">${autoTotal}명</strong>`
+      : `<strong style="color:var(--g700)">${manualTotal!=null ? manualTotal : autoTotal}명</strong>`;
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
     const st = schStatus(items[0]);
     return `<tr>
       <td><strong>${fmtDate(date)}</strong></td>
       <td>${clsNames}</td>
       <td><span class="bdg bdg-gold">${rounds}</span></td>
-      <td><strong style="color:var(--g700)">${total}명</strong></td>
+      <td>${displayTotal}</td>
       <td>${schStatusBadge(st)}</td>
     </tr>`;
   }).join('');
