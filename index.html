@@ -119,10 +119,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 /* Table */
 .tbl-wrap{overflow-x:auto}
 .tbl{width:100%;border-collapse:collapse;min-width:600px}
-.tbl th{text-align:left;padding:9px 12px;font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);background:var(--cream);border-bottom:1px solid var(--warm2);white-space:nowrap}
+.tbl th{text-align:left;padding:9px 12px;font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);background:var(--cream);border-bottom:1px solid var(--warm2);white-space:nowrap;position:sticky;top:0;z-index:1}
 .tbl th.center,.tbl td.center{text-align:center}
 .tbl td{padding:10px 12px;border-bottom:1px solid var(--warm1);font-size:15px;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:nth-child(odd) td{background:#fff}
+.tbl tbody tr:nth-child(even) td{background:var(--warm1)}
 .tbl tr:hover td{background:var(--g50)}
 
 /* Checkbox doc */
@@ -1138,7 +1140,7 @@ function renderMyClass() {
     if (q) list = list.filter(s=>s.name?.toLowerCase().includes(q)||s.studentId?.includes(q));
     list = sortStudents(list);
     if (multiGroup) {
-      tableRows += `<tr><td colspan="10" style="background:var(--warm1);color:var(--g900);font-weight:700;font-size:14px;padding:8px 14px;border-top:2px solid var(--warm2)">${key}반</td></tr>`;
+      tableRows += `<tr><td colspan="10" style="background:var(--warm2) !important;color:var(--g900);font-weight:700;font-size:14px;padding:8px 14px;border-top:2px solid var(--warm2)">${key}반</td></tr>`;
     }
     tableRows += list.length
       ? list.map(s=>stuRow(s,true)).join('')
