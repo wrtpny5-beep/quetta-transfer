@@ -532,7 +532,8 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
     <div class="modal-head"><div class="modal-head-title" id="stuModalTitle">학생 추가</div><button class="modal-x" onclick="closeOverlay('stuOverlay')">×</button></div>
     <div class="modal-body">
       <input type="hidden" id="stuEditId">
-      <div class="fg"><label>반</label><select id="stuClass"></select></div>
+      <div class="fg"><label>반</label><select id="stuClass" onchange="onStuClassChange()"></select></div>
+      <div class="fg" id="stuSubClassGrp" style="display:none"><label>세부반</label><select id="stuSubClass"></select></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="fg"><label>학번</label><input type="text" id="stuNo" placeholder="학번"></div>
         <div class="fg"><label>성별</label><select id="stuGender"><option value="남">남</option><option value="여">여</option></select></div>
@@ -1635,6 +1636,23 @@ function renderUsers() {
 }
 
 // ── STUDENT CRUD ──
+// 반 선택 변경 시 세부반(subClass) 옵션 업데이트
+window.onStuClassChange = (selectedSub) => {
+  const cid = $('stuClass').value;
+  const cls = classes.find(c=>c.id===cid);
+  const grp = $('stuSubClassGrp');
+  const sel = $('stuSubClass');
+  if (!cls || !cls.name.includes(',')) {
+    grp.style.display = 'none';
+    sel.innerHTML = '';
+    return;
+  }
+  const subs = expandClassName(cls.name); // ["O1","M1"]
+  sel.innerHTML = subs.map(s=>`<option value="${s}">${s}반</option>`).join('');
+  if (selectedSub && subs.includes(selectedSub)) sel.value = selectedSub;
+  grp.style.display = 'block';
+};
+
 window.openStuModal = () => {
   $('stuModalTitle').textContent='학생 추가'; $('stuEditId').value='';
   $('stuNo').value=$('stuName').value=$('stuNotes').value='';
@@ -1650,6 +1668,7 @@ window.openStuModal = () => {
 
   if(meDoc.role==='teacher' && myClassIds.length===1) $('stuClass').value=myClassIds[0];
   else if(activeClsFilter) $('stuClass').value=activeClsFilter;
+  onStuClassChange(); // 세부반 UI 초기화
   openOverlay('stuOverlay');
 };
 
@@ -1662,6 +1681,7 @@ window.editStudent = id => {
   $('stuGender').value=s.gender||'남'; $('stuNotes').value=r.notes||''; $('stuRound').value=r.round||'';
   $('cbForm').checked=!!r.form; $('cbIns').checked=!!r.insurance;
   $('cbId').checked=!!r.idCard; $('cbMil').checked=!!r.military;
+  onStuClassChange(s.subClass); // 세부반 복원
   openOverlay('stuOverlay');
 };
 
@@ -1670,7 +1690,14 @@ window.saveStudent = async () => {
   const classId=$('stuClass').value, studentId=$('stuNo').value.trim(),
         name=$('stuName').value.trim(), gender=$('stuGender').value;
   if(!name||!classId) return toast('반과 이름은 필수입니다.',true);
-  const sData={classId,studentId,name,gender,updatedAt:serverTimestamp()};
+
+  // 묶인 반(콤마 포함)이면 세부반 필수
+  const cls = classes.find(c=>c.id===classId);
+  const isCombined = cls && cls.name.includes(',');
+  const subClass = isCombined ? $('stuSubClass').value : '';
+  if (isCombined && !subClass) return toast('세부반을 선택해 주세요.',true);
+
+  const sData={classId,studentId,name,gender,subClass,updatedAt:serverTimestamp()};
   const rData={form:$('cbForm').checked,insurance:$('cbIns').checked,
                idCard:$('cbId').checked,military:$('cbMil').checked,
                round:$('stuRound').value,notes:$('stuNotes').value,updatedAt:serverTimestamp()};
