@@ -429,7 +429,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
                 <th class="center">전입신고서</th><th class="center">건강보험증</th>
                 <th class="center">신분증</th><th class="center">징병검사</th>
                 <th onclick="setSortCol('round')" style="cursor:pointer;user-select:none">회차 <span id="msh-round"></span></th>
-                <th>비고</th><th class="center">퇴소</th>
+                <th>비고</th><th class="center">퇴소</th><th></th>
               </tr></thead>
               <tbody id="myStuBody"></tbody>
             </table>
@@ -1141,13 +1141,13 @@ function renderMyClass() {
     if (q) list = list.filter(s=>s.name?.toLowerCase().includes(q)||s.studentId?.includes(q));
     list = sortStudents(list);
     if (multiGroup) {
-      tableRows += `<tr><td colspan="10" style="background:var(--warm2) !important;color:var(--g900);font-weight:700;font-size:14px;padding:8px 14px;border-top:2px solid var(--warm2)">${key}반</td></tr>`;
+      tableRows += `<tr><td colspan="11" style="background:var(--warm2) !important;color:var(--g900);font-weight:700;font-size:14px;padding:8px 14px;border-top:2px solid var(--warm2)">${key}반</td></tr>`;
     }
     tableRows += list.length
       ? list.map(s=>stuRow(s,true)).join('')
-      : `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:16px">학생이 없습니다.</td></tr>`;
+      : `<tr><td colspan="11" style="text-align:center;color:var(--t3);padding:16px">학생이 없습니다.</td></tr>`;
   });
-  $('myStuBody').innerHTML = tableRows || `<tr><td colspan="10" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+  $('myStuBody').innerHTML = tableRows || `<tr><td colspan="11" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
 }
 
 // ── 정렬 ──
@@ -1237,11 +1237,11 @@ function stuRow(s, isTeacher=false) {
     const dis  = isOut ? 'disabled' : '';
     return `<td class="center"><button class="doc-toggle ${cls2}" ${dis} onclick="cycleDoc('${s.id}','${field}',this)" title="${label} (${val===0?'미확인':val===1?'담임확인':'완료'})">${icon}</button></td>`;
   };
-  const colspan = isTeacher ? 10 : 11;
-  const actions = !isTeacher ? `<td><div class="tbl-actions">
+  const colspan = 11;
+  const actions = `<td><div class="tbl-actions">
     <button class="btn btn-ghost btn-sm" onclick="editStudent('${s.id}')">수정</button>
     <button class="btn btn-red btn-sm" onclick="delStudent('${s.id}','${s.name}')">삭제</button>
-  </div></td>` : '';
+  </div></td>`;
   return `<tr style="${isOut?'background:#fafafa;':''}">
     <td style="${dimStyle}"><span style="font-family:monospace;font-size:12px">${s.studentId||'-'}</span>${(s.subClass||cls?.name)?` <span class="bdg bdg-gray" style="margin-left:4px">${s.subClass||cls?.name}</span>`:''}</td>
     <td style="${dimStyle}"><strong>${s.name||'-'}</strong>${!isTeacher&&cls?` <span class="bdg bdg-gray" style="margin-left:4px;opacity:.5">${cls.name}</span>`:''} ${isOut?'<span class="bdg bdg-red">퇴소</span>':''}</td>
