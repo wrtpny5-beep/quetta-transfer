@@ -1344,8 +1344,7 @@ function renderAllSchedule() {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        const male = st.gender === '남';
-        return r.form===2 && r.insurance===2 && r.idCard===2 && (!male || r.military===2);
+        return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
     const displayTotal = is1st
@@ -1536,8 +1535,7 @@ function renderSchedule() {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        const male = st.gender === '남';
-        return r.form===2 && r.insurance===2 && r.idCard===2 && (!male || r.military===2);
+        return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
