@@ -1514,7 +1514,8 @@ function renderSchedule() {
     $('schDateBody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">등록된 일정이 없습니다.</td></tr>`;
     return;
   }
-  $('schDateBody').innerHTML = sortedDates.map(date => {
+  let sumCompleted = 0, sumTotal = 0, hasCompleted = false;
+  const rowsHtml = sortedDates.map(date => {
     const items = grouped[date].sort((a,b)=>(a.round||'').localeCompare(b.round||''));
     const clsNames = items.map(s => {
       const cls = classes.find(c=>c.id===s.classId);
@@ -1553,6 +1554,9 @@ function renderSchedule() {
            onchange="saveManualTotal('${schId}',this.value,${autoTotal})"
            title="직접 입력 (빈칸이면 자동계산)">명`;
     const displayTotal = (!is1st && manualTotal!=null) ? manualTotal : autoTotal;
+    // 합계 누적: 완료명은 과거 1차 행에서만, 전체명은 모든 행
+    if (is1st && isPast) { sumCompleted += completedTotal; hasCompleted = true; }
+    sumTotal += displayTotal;
     return `<tr>
       <td><strong>${fmtDate(date)}</strong></td>
       <td>${clsNames}</td>
@@ -1561,6 +1565,17 @@ function renderSchedule() {
       <td>${schStatusBadge(st)}</td>
     </tr>`;
   }).join('');
+  const footerCell = hasCompleted
+    ? `<strong style="color:var(--g900);font-size:15px">${sumCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${sumTotal}명</span>`
+    : `<strong style="color:var(--g900);font-size:15px">${sumTotal}명</strong>`;
+  const footerRow = `<tr style="background:var(--warm1);border-top:2px solid var(--warm2)">
+      <td style="font-weight:800;color:var(--g900)">합계</td>
+      <td></td>
+      <td></td>
+      <td>${footerCell}</td>
+      <td></td>
+    </tr>`;
+  $('schDateBody').innerHTML = rowsHtml + footerRow;
 }
 
 window.saveManualTotal = async (schId, val, autoTotal) => {
