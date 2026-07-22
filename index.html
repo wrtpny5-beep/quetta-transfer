@@ -342,12 +342,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
             </div>
           </div>
         </div>
-        <div style="margin-top:24px">
-          <div class="card" style="padding:18px 22px;display:flex;align-items:center;justify-content:space-between;background:var(--warm1)">
-            <div style="font-size:15px;font-weight:700;color:var(--g900)">2차 전입신고 대상</div>
-            <div><strong id="sch2ndCount" style="font-size:22px;color:var(--g900)">0</strong> <span style="font-size:14px;color:var(--t3)">명</span></div>
-          </div>
-        </div>
       </div>
 
       <!-- Import -->
@@ -1589,13 +1583,6 @@ function renderSchedule() {
       <td></td>
     </tr>`;
   $('schDateBody').innerHTML = rowsHtml + footerRow;
-  // 2차 전입신고 대상 인원 (r.round === '2차' 인 재원생)
-  const count2nd = students.filter(st => {
-    const r = records.find(r=>r.id===st.id)||{};
-    return !r.withdrawn && r.round === '2차';
-  }).length;
-  const el2nd = $('sch2ndCount');
-  if (el2nd) el2nd.textContent = count2nd;
 }
 
 window.overrideSchStatus = async (id, val) => {
