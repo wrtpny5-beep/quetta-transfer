@@ -1331,7 +1331,7 @@ function renderAllSchedule() {
       return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
     }).join('');
     const isPast = date < today;
-    // 총 인원: 1차는 반 전체, 그 외는 r.round === 회차 일치 학생만
+    // 총 인원: 학생의 r.round와 스케줄 회차가 일치하는 학생 (r.round 미지정은 1차 취급)
     const rowTotal = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
@@ -1339,11 +1339,13 @@ function renderAllSchedule() {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        if (s.round === '1차') return true;
-        return r.round === s.round;
+        // 학생이 이 스케줄의 회차에 속하는지 판정 (r.round 미지정은 1차로 간주)
+        const studentRound = r.round || '1차';
+        if (studentRound !== s.round) return false;
+        return true;
       }).length;
     }, 0);
-    // 완료 인원(과거만): 1차는 반 전체 중 완료, 그 외는 회차 일치 + 완료
+    // 완료 인원(과거만): 위 회차 일치 조건 + form✓✓ + idCard✓✓
     const rowCompleted = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
@@ -1351,7 +1353,8 @@ function renderAllSchedule() {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        if (s.round !== '1차' && r.round !== s.round) return false;
+        const studentRound = r.round || '1차';
+        if (studentRound !== s.round) return false;
         return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
@@ -1532,7 +1535,7 @@ function renderSchedule() {
     const today = new Date().toISOString().slice(0,10);
     const isPast = date < today;
     const is1st = items.some(s=>s.round==='1차');
-    // 총 인원: 1차는 반 전체, 그 외는 r.round === 회차 일치 학생만
+    // 총 인원: 학생의 r.round와 스케줄 회차가 일치하는 학생 (r.round 미지정은 1차 취급)
     const rowTotal = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
@@ -1540,11 +1543,13 @@ function renderSchedule() {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        if (s.round === '1차') return true;
-        return r.round === s.round;
+        // 학생이 이 스케줄의 회차에 속하는지 판정 (r.round 미지정은 1차로 간주)
+        const studentRound = r.round || '1차';
+        if (studentRound !== s.round) return false;
+        return true;
       }).length;
     }, 0);
-    // 완료 인원(과거만): 1차는 반 전체 중 완료, 그 외는 회차 일치 + 완료
+    // 완료 인원(과거만): 위 회차 일치 조건 + form✓✓ + idCard✓✓
     const rowCompleted = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
@@ -1552,7 +1557,8 @@ function renderSchedule() {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        if (s.round !== '1차' && r.round !== s.round) return false;
+        const studentRound = r.round || '1차';
+        if (studentRound !== s.round) return false;
         return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
