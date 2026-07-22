@@ -1578,9 +1578,14 @@ function renderSchedule() {
       <td>${schStatusBadge(st)}</td>
     </tr>`;
   }).join('');
+  // 개별완료 학생 (별도 표기용, 합계에는 미포함)
+  const indivDone = students.filter(st => {
+    const r = records.find(r=>r.id===st.id)||{};
+    return !r.withdrawn && r.round === '개별완료';
+  }).length;
   const footerCell = hasCompleted
-    ? `<strong style="color:var(--g900);font-size:15px">${sumCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${sumTotal}명</span>`
-    : `<strong style="color:var(--g900);font-size:15px">${sumTotal}명</strong>`;
+    ? `<strong style="color:var(--g900);font-size:15px">${sumCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${sumTotal}명</span>${indivDone>0?` <span style="font-size:12px;color:var(--t3);margin-left:8px">(개별완료 <strong style="color:var(--g700)">${indivDone}명</strong>)</span>`:''}`
+    : `<strong style="color:var(--g900);font-size:15px">${sumTotal}명</strong>${indivDone>0?` <span style="font-size:12px;color:var(--t3);margin-left:8px">(개별완료 <strong style="color:var(--g700)">${indivDone}명</strong>)</span>`:''}`;
   const footerRow = `<tr style="background:var(--warm1);border-top:2px solid var(--warm2)">
       <td style="font-weight:800;color:var(--g900)">합계</td>
       <td></td>
