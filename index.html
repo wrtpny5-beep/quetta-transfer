@@ -342,6 +342,12 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
             </div>
           </div>
         </div>
+        <div style="margin-top:24px">
+          <div class="card" style="padding:18px 22px;display:flex;align-items:center;justify-content:space-between;background:var(--warm1)">
+            <div style="font-size:15px;font-weight:700;color:var(--g900)">2차 전입신고 대상</div>
+            <div><strong id="sch2ndCount" style="font-size:22px;color:var(--g900)">0</strong> <span style="font-size:14px;color:var(--t3)">명</span></div>
+          </div>
+        </div>
       </div>
 
       <!-- Import -->
@@ -1330,27 +1336,34 @@ function renderAllSchedule() {
       const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
       return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
     }).join('');
-    const autoTotal = items.reduce((sum, s) => {
-      const cls = classes.find(c=>c.id===s.classId);
-      return sum + (cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0);
-    }, 0);
-    const is1st = items.some(s=>s.round==='1차');
     const isPast = date < today;
-    const manualTotal = items.find(s=>s.manualTotal!=null)?.manualTotal;
-    const completedTotal = items.reduce((sum, s) => {
+    // 총 인원: 1차는 반 전체, 그 외는 r.round === 회차 일치 학생만
+    const rowTotal = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
       return sum + students.filter(st => {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
+        if (s.round === '1차') return true;
+        return r.round === s.round;
+      }).length;
+    }, 0);
+    // 완료 인원(과거만): 1차는 반 전체 중 완료, 그 외는 회차 일치 + 완료
+    const rowCompleted = items.reduce((sum, s) => {
+      const cls = classes.find(c=>c.id===s.classId);
+      if (!cls) return sum;
+      return sum + students.filter(st => {
+        if (st.classId !== cls.id) return false;
+        const r = records.find(r=>r.id===st.id)||{};
+        if (r.withdrawn) return false;
+        if (s.round !== '1차' && r.round !== s.round) return false;
         return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
-    const displayTotal = is1st
-      ? isPast ? `<strong style="color:var(--g700)">${completedTotal}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${autoTotal}명</span>`
-               : `<strong style="color:var(--g700)">${autoTotal}명</strong>`
-      : `<strong style="color:var(--g700)">${manualTotal!=null ? manualTotal : autoTotal}명</strong>`;
+    const displayTotal = isPast
+      ? `<strong style="color:var(--g700)">${rowCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${rowTotal}명</span>`
+      : `<strong style="color:var(--g700)">${rowTotal}명</strong>`;
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
     const st = schStatus(items[0]);
     return `<tr>
@@ -1522,41 +1535,41 @@ function renderSchedule() {
       const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
       return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
     }).join('');
-    const autoTotal = items.reduce((sum, s) => {
-      const cls = classes.find(c=>c.id===s.classId);
-      return sum + (cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0);
-    }, 0);
-    // 1차이고 날짜가 지났으면 완료 체크된 학생 수로 표시
     const today = new Date().toISOString().slice(0,10);
     const isPast = date < today;
-    const completedTotal = items.reduce((sum, s) => {
+    const is1st = items.some(s=>s.round==='1차');
+    // 총 인원: 1차는 반 전체, 그 외는 r.round === 회차 일치 학생만
+    const rowTotal = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
       return sum + students.filter(st => {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
+        if (s.round === '1차') return true;
+        return r.round === s.round;
+      }).length;
+    }, 0);
+    // 완료 인원(과거만): 1차는 반 전체 중 완료, 그 외는 회차 일치 + 완료
+    const rowCompleted = items.reduce((sum, s) => {
+      const cls = classes.find(c=>c.id===s.classId);
+      if (!cls) return sum;
+      return sum + students.filter(st => {
+        if (st.classId !== cls.id) return false;
+        const r = records.find(r=>r.id===st.id)||{};
+        if (r.withdrawn) return false;
+        if (s.round !== '1차' && r.round !== s.round) return false;
         return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
     const st = schStatus(items[0]);
-    const is1st = items.some(s=>s.round==='1차');
-    // 수동 합계: 같은 날짜 스케줄 중 manualTotal이 있으면 사용
-    const manualTotal = items.find(s=>s.manualTotal!=null)?.manualTotal;
-    const schId = items[0]?.id; // 저장 기준 id
-    const totalCell = is1st
-      ? isPast
-        ? `<strong style="color:var(--g700)">${completedTotal}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${autoTotal}명</span>`
-        : `<strong style="color:var(--g700)">${autoTotal}명</strong>`
-      : `<input type="number" min="0" value="${manualTotal??''}" placeholder="${autoTotal}" 
-           style="width:70px;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:14px;font-family:'Noto Sans KR',sans-serif"
-           onchange="saveManualTotal('${schId}',this.value,${autoTotal})"
-           title="직접 입력 (빈칸이면 자동계산)">명`;
-    const displayTotal = (!is1st && manualTotal!=null) ? manualTotal : autoTotal;
-    // 합계 누적: 완료명은 과거 1차 행에서만, 전체명은 모든 행
-    if (is1st && isPast) { sumCompleted += completedTotal; hasCompleted = true; }
-    sumTotal += displayTotal;
+    const totalCell = isPast
+      ? `<strong style="color:var(--g700)">${rowCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${rowTotal}명</span>`
+      : `<strong style="color:var(--g700)">${rowTotal}명</strong>`;
+    // 합계 누적
+    if (isPast) { sumCompleted += rowCompleted; hasCompleted = true; }
+    sumTotal += rowTotal;
     return `<tr>
       <td><strong>${fmtDate(date)}</strong></td>
       <td>${clsNames}</td>
@@ -1576,15 +1589,15 @@ function renderSchedule() {
       <td></td>
     </tr>`;
   $('schDateBody').innerHTML = rowsHtml + footerRow;
+  // 2차 전입신고 대상 인원 (r.round === '2차' 인 재원생)
+  const count2nd = students.filter(st => {
+    const r = records.find(r=>r.id===st.id)||{};
+    return !r.withdrawn && r.round === '2차';
+  }).length;
+  const el2nd = $('sch2ndCount');
+  if (el2nd) el2nd.textContent = count2nd;
 }
 
-window.saveManualTotal = async (schId, val, autoTotal) => {
-  const num = val==='' ? null : parseInt(val);
-  await updateDoc(doc(db,'schedules',schId), { manualTotal: num, updatedAt: serverTimestamp() });
-  const s = schedules.find(s=>s.id===schId);
-  if(s) s.manualTotal = num;
-  toast('저장되었습니다.');
-};
 window.overrideSchStatus = async (id, val) => {
   await updateDoc(doc(db,'schedules',id), { statusOverride: val, updatedAt: serverTimestamp() });
   const s = schedules.find(s=>s.id===id);
