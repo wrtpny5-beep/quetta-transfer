@@ -1764,6 +1764,71 @@ window.editSch = id => {
   openOverlay('schOverlay');
 };
 
+// ── 임시 진단 함수 (콘솔에서 __debugCount() 호출) — 문제 해결 후 제거 예정 ──
+window.__debugCount = () => {
+  // ① 더블체크 완료 총수
+  const doubleChecked = students.filter(st => {
+    const r = records.find(r => r.id === st.id) || {};
+    return !r.withdrawn && r.form === 2 && r.idCard === 2;
+  });
+  console.log('%c① 더블체크 완료(퇴소X) 총수:', 'color:#00B2BE;font-weight:bold', doubleChecked.length);
+
+  // ② 반별 스케줄 회차 맵
+  const scheduleRounds = {};
+  schedules.forEach(s => {
+    if (!scheduleRounds[s.classId]) scheduleRounds[s.classId] = new Set();
+    scheduleRounds[s.classId].add(s.round);
+  });
+
+  // ③ 카테고리별 분류
+  const cat = { row1st:0, row2nd:0, row3rd:0, indiv:0, missing:[] };
+  doubleChecked.forEach(st => {
+    const r = records.find(r => r.id === st.id) || {};
+    const cls = classes.find(c => c.id === st.classId);
+    if (r.round === '개별완료') { cat.indiv++; return; }
+    const studentRound = r.round || '1차';
+    const clsRounds = scheduleRounds[st.classId] || new Set();
+    if (!clsRounds.has(studentRound)) {
+      cat.missing.push({
+        이름: st.name, 학번: st.studentId,
+        반: cls ? cls.name : '(반 없음)',
+        classId: st.classId,
+        회차: r.round === undefined ? '(undefined)' : r.round === '' ? '(빈문자열)' : r.round,
+        회차_raw: JSON.stringify(r.round)
+      });
+      return;
+    }
+    if (studentRound === '1차') cat.row1st++;
+    else if (studentRound === '2차') cat.row2nd++;
+    else if (studentRound === '3차') cat.row3rd++;
+    else cat.missing.push({이름:st.name, 학번:st.studentId, 반:cls?cls.name:'?', 회차:r.round, 회차_raw:JSON.stringify(r.round)});
+  });
+
+  console.log('%c② 카테고리별 분포:', 'color:#00B2BE;font-weight:bold');
+  console.log('  1차 행 카운트:', cat.row1st);
+  console.log('  2차 행 카운트:', cat.row2nd);
+  console.log('  3차 행 카운트:', cat.row3rd);
+  console.log('  개별완료:', cat.indiv);
+  console.log('  누락:', cat.missing.length);
+  console.log('  ── 합계:', cat.row1st + cat.row2nd + cat.row3rd + cat.indiv + cat.missing.length);
+
+  if (cat.missing.length) {
+    console.log('%c③ 누락 학생 명단:', 'color:#E74C3C;font-weight:bold');
+    console.table(cat.missing);
+  }
+
+  // ④ r.round 값 종류
+  const roundValues = {};
+  records.filter(r => !r.withdrawn).forEach(r => {
+    const key = JSON.stringify(r.round);
+    roundValues[key] = (roundValues[key] || 0) + 1;
+  });
+  console.log('%c④ r.round 값 분포 (전체 재원생 기록):', 'color:#00B2BE;font-weight:bold');
+  console.table(roundValues);
+
+  return cat;
+};
+
 window.saveSchedule = async () => {
   const eid=$('schEditId').value,
         round=$('schRound').value.trim(), date=$('schDate').value, notes=$('schNotes').value;
