@@ -1567,10 +1567,10 @@ function renderSchedule() {
       <td>${schStatusBadge(st)}</td>
     </tr>`;
   }).join('');
-  // 개별완료 학생 (별도 표기용, 합계에는 미포함) — 더블체크 조건도 적용
+  // 개별완료 학생 (별도 표기용, 합계에는 미포함) — 개별완료 자체가 완료 표시이므로 더블체크 조건 미적용
   const indivDone = students.filter(st => {
     const r = records.find(r=>r.id===st.id)||{};
-    return !r.withdrawn && r.round === '개별완료' && r.form===2 && r.idCard===2;
+    return !r.withdrawn && r.round === '개별완료';
   }).length;
   const footerCell = `<strong style="color:var(--g900);font-size:15px">${sumCount}명</strong>${indivDone>0?` <span style="font-size:12px;color:var(--t3);margin-left:8px">(개별완료 <strong style="color:var(--g700)">${indivDone}명</strong>)</span>`:''}`;
   const footerRow = `<tr style="background:var(--warm1);border-top:2px solid var(--warm2)">
