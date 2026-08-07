@@ -569,11 +569,21 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
     <div class="modal-head"><div class="modal-head-title" id="schModalTitle">일정 추가</div><button class="modal-x" onclick="closeOverlay('schOverlay')">×</button></div>
     <div class="modal-body">
       <input type="hidden" id="schEditId">
-      <div class="fg"><label>반</label><select id="schClass"></select></div>
+      <!-- 편집 모드: 단일 반 셀렉트 -->
+      <div class="fg" id="schClassSingleGrp" style="display:none"><label>반</label><select id="schClass"></select></div>
+      <!-- 추가 모드: 다중 반 체크박스 -->
+      <div class="fg" id="schClassMultiGrp">
+        <label style="display:flex;align-items:center;justify-content:space-between">
+          <span>반 (여러 개 선택 가능)</span>
+          <span style="font-size:12px;color:var(--t3);cursor:pointer;font-weight:500" onclick="toggleSchClsAll()">전체 선택/해제</span>
+        </label>
+        <div id="schClassList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;max-height:240px;overflow-y:auto;padding:12px;border:1.5px solid var(--warm2);border-radius:8px;background:var(--warm1)"></div>
+      </div>
       <div class="fg"><label>회차</label>
-        <select id="schRound">
-          <option value="1차">1차</option><option value="2차">2차</option><option value="3차">3차</option>
-        </select>
+        <input type="text" id="schRound" list="schRoundOptions" placeholder="예: 1차, 2차, 3차, 재수시" autocomplete="off" value="1차">
+        <datalist id="schRoundOptions">
+          <option value="1차"><option value="2차"><option value="3차"><option value="개별완료"><option value="재수시">
+        </datalist>
       </div>
       <div class="fg"><label>날짜</label><input type="date" id="schDate"></div>
       <div class="fg"><label>비고</label><input type="text" id="schNotes" placeholder="특이사항"></div>
@@ -1746,29 +1756,74 @@ window.delStudent = async (id,name) => {
 
 // ── SCHEDULE CRUD ──
 window.openSchModal = (preClsId='') => {
-  $('schModalTitle').textContent='일정 추가'; $('schEditId').value=''; $('schDate').value=''; $('schNotes').value='';
-  $('schClass').innerHTML=classes.map(c=>`<option value="${c.id}" ${c.id===preClsId?'selected':''}>${c.name}반</option>`).join('');
+  $('schModalTitle').textContent='일정 추가'; $('schEditId').value='';
+  $('schDate').value=''; $('schNotes').value=''; $('schRound').value='1차';
+  // 편집 셀렉트 숨김, 다중 체크박스 표시
+  $('schClassSingleGrp').style.display = 'none';
+  $('schClassMultiGrp').style.display = '';
+  $('schClassList').innerHTML = classes.map(c =>
+    `<label style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#fff;border:1px solid var(--warm2);border-radius:6px;cursor:pointer;font-size:14px">
+      <input type="checkbox" class="sch-cls-cb" value="${c.id}" ${c.id===preClsId?'checked':''} style="cursor:pointer">
+      <span>${c.name}반</span>
+    </label>`
+  ).join('');
   openOverlay('schOverlay');
+};
+
+window.toggleSchClsAll = () => {
+  const cbs = document.querySelectorAll('.sch-cls-cb');
+  const allChecked = [...cbs].every(cb => cb.checked);
+  cbs.forEach(cb => cb.checked = !allChecked);
 };
 
 window.editSch = id => {
   const s=schedules.find(s=>s.id===id); if(!s) return;
   $('schModalTitle').textContent='일정 수정'; $('schEditId').value=id;
+  // 편집 셀렉트만 표시, 다중 체크박스 숨김
+  $('schClassMultiGrp').style.display = 'none';
+  $('schClassSingleGrp').style.display = '';
   $('schClass').innerHTML=classes.map(c=>`<option value="${c.id}" ${c.id===s.classId?'selected':''}>${c.name}반</option>`).join('');
   $('schRound').value=s.round||'1차'; $('schDate').value=s.date||''; $('schNotes').value=s.notes||'';
   openOverlay('schOverlay');
 };
 
 window.saveSchedule = async () => {
-  const eid=$('schEditId').value, classId=$('schClass').value,
-        round=$('schRound').value, date=$('schDate').value, notes=$('schNotes').value;
-  if(!classId||!date) return toast('반과 날짜는 필수입니다.',true);
-  const data={classId,round,date,notes,updatedAt:serverTimestamp()};
+  const eid=$('schEditId').value,
+        round=$('schRound').value.trim(), date=$('schDate').value, notes=$('schNotes').value;
+  if(!round) return toast('회차를 입력해 주세요.',true);
+  if(!date) return toast('날짜를 선택해 주세요.',true);
+
   try {
-    if(eid) await updateDoc(doc(db,'schedules',eid),data);
-    else    await addDoc(collection(db,'schedules'),{...data,createdAt:serverTimestamp()});
-    toast('저장되었습니다.'); closeOverlay('schOverlay'); await reload(); renderSchedule();
-  } catch(e){ toast('저장 실패',true); }
+    // 편집 모드: 기존 문서 하나만 수정
+    if (eid) {
+      const classId = $('schClass').value;
+      if (!classId) return toast('반을 선택해 주세요.',true);
+      await updateDoc(doc(db,'schedules',eid), {classId,round,date,notes,updatedAt:serverTimestamp()});
+      toast('수정되었습니다.');
+      closeOverlay('schOverlay'); await reload(); renderSchedule();
+      return;
+    }
+
+    // 추가 모드: 선택된 반들에 대해 일괄 생성 (중복 스킵)
+    const selectedIds = [...document.querySelectorAll('.sch-cls-cb:checked')].map(cb => cb.value);
+    if (!selectedIds.length) return toast('반을 최소 1개 이상 선택해 주세요.',true);
+
+    const toAdd = [], dup = [];
+    for (const cid of selectedIds) {
+      const exists = schedules.some(s => s.classId===cid && s.round===round && s.date===date);
+      if (exists) dup.push(cid); else toAdd.push(cid);
+    }
+    if (!toAdd.length) return toast(`선택한 반 모두 이미 존재하는 스케줄입니다 (${dup.length}건 스킵)`,true);
+    if (dup.length && !confirm(`${toAdd.length}건 추가, ${dup.length}건은 이미 존재 (스킵). 진행할까요?`)) return;
+
+    const ops = toAdd.map(cid => addDoc(collection(db,'schedules'), {
+      classId:cid, round, date, notes,
+      createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+    }));
+    await Promise.all(ops);
+    toast(`${toAdd.length}건 추가${dup.length?` (${dup.length}건 스킵)`:''}`);
+    closeOverlay('schOverlay'); await reload(); renderSchedule();
+  } catch(e) { toast('저장 실패: '+e.message,true); }
 };
 
 window.delSch = async id => {
