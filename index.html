@@ -1335,28 +1335,22 @@ function renderAllSchedule() {
   const today = new Date().toISOString().slice(0,10);
   $('teacherSchDateBody').innerHTML = sortedDates.map(date => {
     const items = grouped[date].sort((a,b)=>(a.round||'').localeCompare(b.round||''));
+    // 각 반 chip 카운트: 이 스케줄 회차 + 퇴소X + 더블체크(form✓✓ + idCard✓✓)
     const clsNames = items.map(s => {
       const cls = classes.find(c=>c.id===s.classId);
-      const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
-      return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
-    }).join('');
-    const isPast = date < today;
-    // 총 인원: 학생의 r.round와 스케줄 회차가 일치하는 학생 (r.round 미지정은 1차 취급)
-    const rowTotal = items.reduce((sum, s) => {
-      const cls = classes.find(c=>c.id===s.classId);
-      if (!cls) return sum;
-      return sum + students.filter(st => {
+      if (!cls) return '';
+      const cnt = students.filter(st => {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        // 학생이 이 스케줄의 회차에 속하는지 판정 (r.round 미지정은 1차로 간주)
         const studentRound = r.round || '1차';
         if (studentRound !== s.round) return false;
-        return true;
+        return r.form===2 && r.idCard===2;
       }).length;
-    }, 0);
-    // 완료 인원(과거만): 위 회차 일치 조건 + form✓✓ + idCard✓✓
-    const rowCompleted = items.reduce((sum, s) => {
+      return `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>`;
+    }).join('');
+    // 행 합계 = chip 카운트의 총합 (같은 조건)
+    const rowCount = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
       return sum + students.filter(st => {
@@ -1368,9 +1362,7 @@ function renderAllSchedule() {
         return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
-    const displayTotal = isPast
-      ? `<strong style="color:var(--g700)">${rowCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${rowTotal}명</span>`
-      : `<strong style="color:var(--g700)">${rowTotal}명</strong>`;
+    const displayTotal = `<strong style="color:var(--g700)">${rowCount}명</strong>`;
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
     const st = schStatus(items[0]);
     return `<tr>
@@ -1534,33 +1526,25 @@ function renderSchedule() {
     $('schDateBody').innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">등록된 일정이 없습니다.</td></tr>`;
     return;
   }
-  let sumCompleted = 0, sumTotal = 0, hasCompleted = false;
+  let sumCount = 0;
   const rowsHtml = sortedDates.map(date => {
     const items = grouped[date].sort((a,b)=>(a.round||'').localeCompare(b.round||''));
+    // 각 반 chip 카운트: 이 스케줄 회차 + 퇴소X + 더블체크(form✓✓ + idCard✓✓)
     const clsNames = items.map(s => {
       const cls = classes.find(c=>c.id===s.classId);
-      const cnt = cls ? students.filter(st=>st.classId===cls.id&&!records.find(r=>r.id===st.id)?.withdrawn).length : 0;
-      return cls ? `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>` : '';
-    }).join('');
-    const today = new Date().toISOString().slice(0,10);
-    const isPast = date < today;
-    const is1st = items.some(s=>s.round==='1차');
-    // 총 인원: 학생의 r.round와 스케줄 회차가 일치하는 학생 (r.round 미지정은 1차 취급)
-    const rowTotal = items.reduce((sum, s) => {
-      const cls = classes.find(c=>c.id===s.classId);
-      if (!cls) return sum;
-      return sum + students.filter(st => {
+      if (!cls) return '';
+      const cnt = students.filter(st => {
         if (st.classId !== cls.id) return false;
         const r = records.find(r=>r.id===st.id)||{};
         if (r.withdrawn) return false;
-        // 학생이 이 스케줄의 회차에 속하는지 판정 (r.round 미지정은 1차로 간주)
         const studentRound = r.round || '1차';
         if (studentRound !== s.round) return false;
-        return true;
+        return r.form===2 && r.idCard===2;
       }).length;
-    }, 0);
-    // 완료 인원(과거만): 위 회차 일치 조건 + form✓✓ + idCard✓✓
-    const rowCompleted = items.reduce((sum, s) => {
+      return `<span class="bdg bdg-gray" style="margin-right:4px">${cls.name} <span style="font-weight:400;opacity:.7">${cnt}명</span></span>`;
+    }).join('');
+    // 행 합계 = chip 카운트의 총합 (같은 조건: 회차 매칭 + 퇴소X + 더블체크)
+    const rowCount = items.reduce((sum, s) => {
       const cls = classes.find(c=>c.id===s.classId);
       if (!cls) return sum;
       return sum + students.filter(st => {
@@ -1572,30 +1556,23 @@ function renderSchedule() {
         return r.form===2 && r.idCard===2;
       }).length;
     }, 0);
+    sumCount += rowCount;
     const rounds = [...new Set(items.map(s=>s.round))].join(', ');
     const st = schStatus(items[0]);
-    const totalCell = isPast
-      ? `<strong style="color:var(--g700)">${rowCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${rowTotal}명</span>`
-      : `<strong style="color:var(--g700)">${rowTotal}명</strong>`;
-    // 합계 누적
-    if (isPast) { sumCompleted += rowCompleted; hasCompleted = true; }
-    sumTotal += rowTotal;
     return `<tr>
       <td><strong>${fmtDate(date)}</strong></td>
       <td>${clsNames}</td>
       <td><span class="bdg bdg-gold">${rounds}</span></td>
-      <td>${totalCell}</td>
+      <td><strong style="color:var(--g700)">${rowCount}명</strong></td>
       <td>${schStatusBadge(st)}</td>
     </tr>`;
   }).join('');
-  // 개별완료 학생 (별도 표기용, 합계에는 미포함)
+  // 개별완료 학생 (별도 표기용, 합계에는 미포함) — 더블체크 조건도 적용
   const indivDone = students.filter(st => {
     const r = records.find(r=>r.id===st.id)||{};
-    return !r.withdrawn && r.round === '개별완료';
+    return !r.withdrawn && r.round === '개별완료' && r.form===2 && r.idCard===2;
   }).length;
-  const footerCell = hasCompleted
-    ? `<strong style="color:var(--g900);font-size:15px">${sumCompleted}명</strong> <span style="font-size:12px;color:var(--t3)">/ ${sumTotal}명</span>${indivDone>0?` <span style="font-size:12px;color:var(--t3);margin-left:8px">(개별완료 <strong style="color:var(--g700)">${indivDone}명</strong>)</span>`:''}`
-    : `<strong style="color:var(--g900);font-size:15px">${sumTotal}명</strong>${indivDone>0?` <span style="font-size:12px;color:var(--t3);margin-left:8px">(개별완료 <strong style="color:var(--g700)">${indivDone}명</strong>)</span>`:''}`;
+  const footerCell = `<strong style="color:var(--g900);font-size:15px">${sumCount}명</strong>${indivDone>0?` <span style="font-size:12px;color:var(--t3);margin-left:8px">(개별완료 <strong style="color:var(--g700)">${indivDone}명</strong>)</span>`:''}`;
   const footerRow = `<tr style="background:var(--warm1);border-top:2px solid var(--warm2)">
       <td style="font-weight:800;color:var(--g900)">합계</td>
       <td></td>
