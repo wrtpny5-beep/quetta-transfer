@@ -1470,6 +1470,47 @@ window.updateSnVehicle = async (studentId, val) => {
   if(r) { r.vehicle=val; r.updatedBy=by; } else suneungRecords.push({id:studentId, vehicle:val, updatedBy:by});
 };
 
+// 차량 배정 일괄 import (콘솔에서 window.__importVehicles(mappings) 로 호출)
+// mappings: [{ studentId: '5435', name: '김백준', vehicle: '⑥_24일(월)_7교시_3호차' }, ...]
+window.__importVehicles = async (mappings) => {
+  if (!Array.isArray(mappings) || !mappings.length) {
+    console.error('❌ mappings 배열이 비어있습니다.');
+    return;
+  }
+  console.log(`%c[차량 일괄 배정] 시작 - 총 ${mappings.length}건`, 'color:#00B2BE;font-weight:bold;font-size:14px');
+  const by = meDoc.name || '직원';
+  const notFound = [], errors = [];
+  let ok = 0;
+  const CHUNK = 10;
+  for (let i = 0; i < mappings.length; i += CHUNK) {
+    const batch = mappings.slice(i, i + CHUNK);
+    await Promise.all(batch.map(async m => {
+      const stu = students.find(s => String(s.studentId) === String(m.studentId));
+      if (!stu) { notFound.push(m); return; }
+      try {
+        await setDoc(doc(db,'suneungRecords',stu.id), {vehicle:m.vehicle, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
+        const r = suneungRecords.find(r => r.id === stu.id);
+        if (r) r.vehicle = m.vehicle;
+        else suneungRecords.push({id: stu.id, vehicle: m.vehicle});
+        ok++;
+      } catch (e) {
+        errors.push({...m, error: e.message});
+      }
+    }));
+    console.log(`  진행: ${Math.min(i + CHUNK, mappings.length)} / ${mappings.length} (성공 ${ok}, 학생없음 ${notFound.length}, 에러 ${errors.length})`);
+  }
+  console.log(`%c[완료]`, 'color:#00B2BE;font-weight:bold;font-size:14px');
+  console.log(`  ✅ 성공: ${ok}건`);
+  console.log(`  ⚠️ 학생 없음: ${notFound.length}건`);
+  console.log(`  ❌ 에러: ${errors.length}건`);
+  if (notFound.length) { console.log('\n학생 없음 목록:'); console.table(notFound.map(m=>({학번:m.studentId, 이름:m.name, 차량:m.vehicle}))); }
+  if (errors.length) { console.log('\n에러 목록:'); console.table(errors); }
+  const activeId = document.querySelector('.view.active')?.id;
+  if (activeId === 'vSuneung') renderSuneung();
+  else if (activeId === 'vMySuneung') renderMySuneung();
+  return { ok, notFound: notFound.length, errors: errors.length };
+};
+
 // 수능 원서접수 기록 초기화 (suneungRecords 문서만 삭제, 학생 자체는 유지)
 window.delSnRecord = async (studentId, name) => {
   if(!confirm(`${name} 학생의 수능 원서접수 기록을 초기화할까요?\n(학생 자체는 삭제되지 않으며, 문서 체크 상태와 비고만 지워집니다.)`)) return;
