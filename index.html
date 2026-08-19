@@ -384,6 +384,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
         </div>
       </div>
 
+      <!-- 수능 원서접수 차량 스케줄 -->
+      <div class="view" id="vVehicleSchedule">
+        <div class="pg-head">
+          <div><div class="pg-title">수능 원서접수 차량 스케줄</div><div class="pg-sub">2027학년도 수능 원서접수일 차량 운행 일정</div></div>
+        </div>
+        <div id="vehicleScheduleContent"></div>
+      </div>
+
       <!-- 스케줄 -->
       <div class="view" id="vSchedule">
         <div class="pg-head">
@@ -1017,6 +1025,7 @@ function startRecordsListener() {
     else if (id==='vMyClass') renderMyClass();
     else if (id==='vSuneung') renderSuneung();
     else if (id==='vMySuneung') renderMySuneung();
+    else if (id==='vVehicleSchedule') renderVehicleSchedule();
   });
 }
 
@@ -1040,7 +1049,8 @@ function buildNav() {
       <div class="nav-item" onclick="switchTab('vStudents',this)">학생 관리</div>
       <div class="nav-item" onclick="switchTab('vSuneung',this)">수능 원서접수</div>
       <div class="nav-sec">일정</div>
-      <div class="nav-item" onclick="switchTab('vSchedule',this)">스케줄</div>
+      <div class="nav-item" onclick="switchTab('vSchedule',this)">전입신고 스케줄</div>
+      <div class="nav-item" onclick="switchTab('vVehicleSchedule',this)">수능 원서접수 차량 스케줄</div>
       <div class="nav-sec">관리</div>
       <div class="nav-item" onclick="switchTab('vImport',this)">데이터 import</div>
       <div class="nav-item" onclick="switchTab('vClasses',this)">반 관리</div>
@@ -1050,7 +1060,8 @@ function buildNav() {
       <div class="nav-sec">내 반</div>
       <div class="nav-item" onclick="switchTab('vMyClass',this)">현황 & 학생</div>
       <div class="nav-item" onclick="switchTab('vMySuneung',this)">수능 원서접수</div>
-      <div class="nav-item" onclick="switchTab('vAllSchedule',this)">전체 스케줄</div>
+      <div class="nav-item" onclick="switchTab('vAllSchedule',this)">전입신고 스케줄</div>
+      <div class="nav-item" onclick="switchTab('vVehicleSchedule',this)">수능 원서접수 차량 스케줄</div>
       <div class="nav-item" onclick="switchTab('vDocs',this)">전입신고 서류</div>`;
   }
 }
@@ -1066,6 +1077,7 @@ window.switchTab = (id, el) => {
     vSuneung:    renderSuneung,
     vMySuneung:  renderMySuneung,
     vSchedule:   renderSchedule,
+    vVehicleSchedule: renderVehicleSchedule,
     vImport:     ()=>{},
     vClasses:    renderClasses,
     vUsers:      renderUsers,
@@ -1425,6 +1437,90 @@ const VEHICLES = [
   '⑨_27일(목)_4교시_2호차',
 ];
 
+// 2027학년도 차량 스케줄 (엑셀 '일정차량' 시트 기준)
+const VEHICLE_SCHEDULE = [
+  { date: '8월 24일(월)', period: '2교시', time: '08:30', vehicle: '①_24일(월)_2교시_1호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '2교시', time: '08:30', vehicle: '①_24일(월)_2교시_2호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '3교시', time: '09:30', vehicle: '②_24일(월)_3교시_3호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '4교시', time: '10:30', vehicle: '③_24일(월)_4교시_1호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '4교시', time: '10:30', vehicle: '③_24일(월)_4교시_2호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '5교시', time: '12:30', vehicle: '④_24일(월)_5교시_1호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '5교시', time: '12:30', vehicle: '④_24일(월)_5교시_3호차', capacity: 37 },
+  { date: '8월 24일(월)', period: '6교시', time: '13:30', vehicle: '⑤_24일(월)_6교시_2호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '7교시', time: '14:30', vehicle: '⑥_24일(월)_7교시_1호차', capacity: 38 },
+  { date: '8월 24일(월)', period: '7교시', time: '14:30', vehicle: '⑥_24일(월)_7교시_3호차', capacity: 37 },
+  { date: '8월 24일(월)', period: '8교시', time: '15:30', vehicle: '⑦_24일(월)_8교시_2호차', capacity: 38 },
+  { date: '8월 27일(목)', period: '2교시', time: '08:30', vehicle: '⑧_27일(목)_2교시_1호차', capacity: 37 },
+  { date: '8월 27일(목)', period: '2교시', time: '08:30', vehicle: '⑧_27일(목)_2교시_2호차', capacity: 38 },
+  { date: '8월 27일(목)', period: '4교시', time: '10:30', vehicle: '⑨_27일(목)_4교시_1호차', capacity: 37 },
+  { date: '8월 27일(목)', period: '4교시', time: '10:30', vehicle: '⑨_27일(목)_4교시_2호차', capacity: 38 },
+];
+
+// 차량 스케줄 렌더링 (읽기 전용, 실제 배정 인원도 함께 표시)
+function renderVehicleSchedule() {
+  // 실제 배정된 인원 수 집계 (퇴소생 제외)
+  const assignedCount = {};
+  VEHICLES.forEach(v => assignedCount[v] = 0);
+  suneungRecords.forEach(sn => {
+    if (!sn.vehicle) return;
+    const r = records.find(r=>r.id===sn.id);
+    if (r?.withdrawn) return;
+    if (assignedCount[sn.vehicle] !== undefined) assignedCount[sn.vehicle]++;
+  });
+
+  // 날짜별로 그룹핑
+  const byDate = {};
+  VEHICLE_SCHEDULE.forEach(v => {
+    if (!byDate[v.date]) byDate[v.date] = [];
+    byDate[v.date].push(v);
+  });
+
+  const totalCap = VEHICLE_SCHEDULE.reduce((s,v)=>s+v.capacity, 0);
+  const totalAssigned = Object.values(assignedCount).reduce((s,c)=>s+c, 0);
+
+  let html = `<div class="card" style="padding:16px 20px;margin-bottom:16px;background:var(--warm1);display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:15px;font-weight:700;color:var(--g900)">전체 배정 현황</div>
+    <div><strong style="font-size:20px;color:var(--g900)">${totalAssigned}명</strong> <span style="font-size:14px;color:var(--t3)">/ ${totalCap}명 정원</span></div>
+  </div>`;
+
+  Object.entries(byDate).forEach(([date, list]) => {
+    const dateAssigned = list.reduce((s,v)=>s+(assignedCount[v.vehicle]||0), 0);
+    const dateCap = list.reduce((s,v)=>s+v.capacity, 0);
+    html += `<div style="margin-top:20px">
+      <div style="font-size:15px;font-weight:700;color:var(--g900);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+        <span>${date}</span>
+        <span style="font-size:13px;font-weight:500;color:var(--t3)">${dateAssigned}명 / ${dateCap}명</span>
+      </div>
+      <div class="card"><div class="tbl-wrap"><table class="tbl">
+        <thead><tr>
+          <th>교시</th><th>출발시간</th><th>차량</th>
+          <th class="center">배정</th><th class="center">정원</th><th class="center">여유</th>
+        </tr></thead>
+        <tbody>`;
+    // 교시별로 그룹 (같은 교시 첫 행에만 교시 표시)
+    let prevPeriod = '';
+    list.forEach(v => {
+      const cnt = assignedCount[v.vehicle] || 0;
+      const remaining = v.capacity - cnt;
+      const remainingStyle = remaining < 0 ? 'color:#E74C3C' : remaining === 0 ? 'color:var(--g700)' : 'color:var(--t3)';
+      const periodCell = v.period !== prevPeriod
+        ? `<td><strong>${v.period}</strong></td><td><span class="bdg bdg-gold">${v.time}</span></td>`
+        : `<td></td><td></td>`;
+      prevPeriod = v.period;
+      html += `<tr>
+        ${periodCell}
+        <td>${v.vehicle}</td>
+        <td class="center"><strong style="color:var(--g900)">${cnt}명</strong></td>
+        <td class="center">${v.capacity}명</td>
+        <td class="center" style="${remainingStyle}"><strong>${remaining >= 0 ? '+' : ''}${remaining}명</strong></td>
+      </tr>`;
+    });
+    html += `</tbody></table></div></div></div>`;
+  });
+
+  $('vehicleScheduleContent').innerHTML = html;
+}
+
 // 전입여부 자동 판정 (전입신고서✓✓ + 신분증✓✓, 또는 회차=개별완료)
 function isTransferComplete(studentId) {
   const r = records.find(r=>r.id===studentId) || {};
@@ -1584,10 +1680,15 @@ function renderSuneung() {
   }
   const q = ($('snSearch')?.value || '').trim().toLowerCase();
   let list = students.slice();
+  // 퇴소생 제외
+  list = list.filter(s => !records.find(r=>r.id===s.id)?.withdrawn);
   if (activeClsFilter) list = list.filter(s=>s.classId===activeClsFilter);
   if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
-  // 반 → 이름 순 정렬
+  // 정렬: 전입완료 우선 → 반 → 이름
   list.sort((a,b) => {
+    const ta = isTransferComplete(a.id) ? 0 : 1;
+    const tb = isTransferComplete(b.id) ? 0 : 1;
+    if (ta !== tb) return ta - tb;
     const ca = classes.find(c=>c.id===a.classId)?.name || '';
     const cb = classes.find(c=>c.id===b.classId)?.name || '';
     if (ca !== cb) return ca.localeCompare(cb);
@@ -1607,8 +1708,16 @@ function renderMySuneung() {
   const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : []);
   const q = ($('mySnSearch')?.value || '').trim().toLowerCase();
   let list = students.filter(s=>myClassIds.includes(s.classId));
+  // 퇴소생 제외
+  list = list.filter(s => !records.find(r=>r.id===s.id)?.withdrawn);
   if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
-  list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  // 정렬: 전입완료 우선 → 이름
+  list.sort((a,b) => {
+    const ta = isTransferComplete(a.id) ? 0 : 1;
+    const tb = isTransferComplete(b.id) ? 0 : 1;
+    if (ta !== tb) return ta - tb;
+    return (a.name||'').localeCompare(b.name||'');
+  });
   if (!list.length) {
     $('mySnBody').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
     return;
