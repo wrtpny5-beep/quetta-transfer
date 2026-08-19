@@ -321,6 +321,67 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
         </div>
       </div>
 
+      <!-- 수능 원서접수 -->
+      <div class="view" id="vSuneung">
+        <div class="pg-head">
+          <div><div class="pg-title">수능 원서접수</div><div class="pg-sub">원서접수 서류 제출 현황을 관리하세요</div></div>
+        </div>
+        <div class="tool-bar">
+          <input class="search-input" id="snSearch" placeholder="이름 또는 학번 검색" oninput="renderSuneung()">
+          <div id="snClsChips"></div>
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>학번</th><th>성명</th><th>성별</th><th>반</th>
+                  <th class="center">전입여부</th>
+                  <th class="center">초본</th>
+                  <th class="center">신분증</th>
+                  <th class="center">응시자격확인서류</th>
+                  <th class="center">수수료</th>
+                  <th>비고</th>
+                  <th class="center">퇴소</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="snBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 담임용 수능 원서접수 -->
+      <div class="view" id="vMySuneung">
+        <div class="pg-head">
+          <div><div class="pg-title">수능 원서접수</div><div class="pg-sub">담임 반 학생의 원서접수 서류 현황</div></div>
+        </div>
+        <div class="tool-bar">
+          <input class="search-input" id="mySnSearch" placeholder="이름 또는 학번 검색" oninput="renderMySuneung()">
+        </div>
+        <div class="card">
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>학번</th><th>성명</th><th>성별</th>
+                  <th class="center">전입여부</th>
+                  <th class="center">초본</th>
+                  <th class="center">신분증</th>
+                  <th class="center">응시자격확인서류</th>
+                  <th class="center">수수료</th>
+                  <th>비고</th>
+                  <th class="center">퇴소</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="mySnBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
       <!-- 스케줄 -->
       <div class="view" id="vSchedule">
         <div class="pg-head">
@@ -749,7 +810,7 @@ const db   = getFirestore(app);
 
 // ── 상태 ──
 let me, meDoc;
-let classes=[], students=[], schedules=[], records=[], users=[];
+let classes=[], students=[], schedules=[], records=[], users=[], suneungRecords=[];
 let activeClsFilter = null;
 let importRows = [];
 let teacherSession = null; // { classIds: [...], name } — 담임 세션
@@ -919,6 +980,10 @@ async function reload() {
   // records는 최초 1회만 getDocs, 이후 onSnapshot으로 실시간 유지
   const rsSnap = await getDocs(collection(db,'records'));
   records = rsSnap.docs.map(d=>({id:d.id,...d.data()}));
+
+  // suneungRecords 로드 (수능 원서접수)
+  const snSnap = await getDocs(collection(db,'suneungRecords'));
+  suneungRecords = snSnap.docs.map(d=>({id:d.id,...d.data()}));
 }
 
 // records 실시간 리스너 설정
@@ -943,6 +1008,8 @@ function startRecordsListener() {
     if (id==='vDashboard') renderDashboard();
     else if (id==='vStudents') renderStudents();
     else if (id==='vMyClass') renderMyClass();
+    else if (id==='vSuneung') renderSuneung();
+    else if (id==='vMySuneung') renderMySuneung();
   });
 }
 
@@ -964,6 +1031,7 @@ function buildNav() {
       <div class="nav-sec">현황</div>
       <div class="nav-item" onclick="switchTab('vDashboard',this)">현황판</div>
       <div class="nav-item" onclick="switchTab('vStudents',this)">학생 관리</div>
+      <div class="nav-item" onclick="switchTab('vSuneung',this)">수능 원서접수</div>
       <div class="nav-sec">일정</div>
       <div class="nav-item" onclick="switchTab('vSchedule',this)">스케줄</div>
       <div class="nav-sec">관리</div>
@@ -974,6 +1042,7 @@ function buildNav() {
     nav.innerHTML = `
       <div class="nav-sec">내 반</div>
       <div class="nav-item" onclick="switchTab('vMyClass',this)">현황 & 학생</div>
+      <div class="nav-item" onclick="switchTab('vMySuneung',this)">수능 원서접수</div>
       <div class="nav-item" onclick="switchTab('vAllSchedule',this)">전체 스케줄</div>
       <div class="nav-item" onclick="switchTab('vDocs',this)">전입신고 서류</div>`;
   }
@@ -987,6 +1056,8 @@ window.switchTab = (id, el) => {
   ({
     vDashboard:  renderDashboard,
     vStudents:   renderStudents,
+    vSuneung:    renderSuneung,
+    vMySuneung:  renderMySuneung,
     vSchedule:   renderSchedule,
     vImport:     ()=>{},
     vClasses:    renderClasses,
@@ -1308,7 +1379,13 @@ window.toggleWithdrawn = async (studentId, val) => {
   await setDoc(doc(db,'records',studentId),{withdrawn:val,updatedBy:by,updatedAt:serverTimestamp()},{merge:true});
   const r=records.find(r=>r.id===studentId);
   if(r) { r.withdrawn=val; r.updatedBy=by; } else records.push({id:studentId,withdrawn:val,updatedBy:by});
-  meDoc.role==='staff' ? renderStudents() : renderMyClass();
+  // 활성 뷰에 따라 refresh
+  const activeId = document.querySelector('.view.active')?.id;
+  if (activeId==='vStudents') renderStudents();
+  else if (activeId==='vMyClass') renderMyClass();
+  else if (activeId==='vSuneung') renderSuneung();
+  else if (activeId==='vMySuneung') renderMySuneung();
+  else meDoc.role==='staff' ? renderStudents() : renderMyClass();
   toast(val ? '퇴소 처리되었습니다.' : '퇴소 취소되었습니다.');
 };
 
@@ -1319,7 +1396,145 @@ window.updateNotes = async (studentId, val) => {
   if(r) { r.notes=val; r.updatedBy=by; } else records.push({id:studentId,notes:val,updatedBy:by});
 };
 
-// 담임용 전체 스케줄 (날짜별 표만)
+// ── 수능 원서접수 ──
+
+// 전입여부 자동 판정 (전입신고서✓✓ + 신분증✓✓, 또는 회차=개별완료)
+function isTransferComplete(studentId) {
+  const r = records.find(r=>r.id===studentId) || {};
+  return (r.form===2 && r.idCard===2) || r.round==='개별완료';
+}
+
+// 수능 원서접수 3단계 토글
+window.cycleSnDoc = async (studentId, field, btn) => {
+  const by = meDoc.name || '직원';
+  const cur = suneungRecords.find(r=>r.id===studentId)?.[field] || 0;
+  const next = cur >= 2 ? 0 : cur + 1;
+
+  // 낙관적 UI 업데이트
+  btn.className = `doc-toggle${next===1?' s1':next===2?' s2':''}`;
+  btn.textContent = next===1?'✓':next===2?'✓✓':'';
+  btn.title = `${btn.title.split(' (')[0]} (${next===0?'미확인':next===1?'담임확인':'완료'})`;
+
+  try {
+    await setDoc(doc(db,'suneungRecords',studentId), {[field]:next, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
+    const idx = suneungRecords.findIndex(r=>r.id===studentId);
+    if(idx>=0) { suneungRecords[idx][field]=next; suneungRecords[idx].updatedBy=by; }
+    else suneungRecords.push({id:studentId, [field]:next, updatedBy:by});
+  } catch(e) {
+    btn.className = `doc-toggle${cur===1?' s1':cur===2?' s2':''}`;
+    btn.textContent = cur===1?'✓':cur===2?'✓✓':'';
+    toast('저장 실패',true);
+  }
+};
+
+// 수능 원서접수 비고 저장
+window.updateSnNotes = async (studentId, val) => {
+  const by = meDoc.name || '직원';
+  await setDoc(doc(db,'suneungRecords',studentId), {notes:val, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
+  const r=suneungRecords.find(r=>r.id===studentId);
+  if(r) { r.notes=val; r.updatedBy=by; } else suneungRecords.push({id:studentId, notes:val, updatedBy:by});
+};
+
+// 수능 원서접수 기록 초기화 (suneungRecords 문서만 삭제, 학생 자체는 유지)
+window.delSnRecord = async (studentId, name) => {
+  if(!confirm(`${name} 학생의 수능 원서접수 기록을 초기화할까요?\n(학생 자체는 삭제되지 않으며, 문서 체크 상태와 비고만 지워집니다.)`)) return;
+  try {
+    await deleteDoc(doc(db,'suneungRecords',studentId));
+    suneungRecords = suneungRecords.filter(r=>r.id!==studentId);
+    toast('초기화되었습니다.');
+    meDoc.role==='staff' ? renderSuneung() : renderMySuneung();
+  } catch(e) { toast('실패: '+e.message, true); }
+};
+
+// 수능 원서접수 행 렌더링
+function suneungRow(s, isTeacher=false) {
+  const r = records.find(r=>r.id===s.id) || {}; // 퇴소/전입 상태 참조
+  const sn = suneungRecords.find(r=>r.id===s.id) || {};
+  const isOut = !!r.withdrawn;
+  const dimStyle = isOut ? 'opacity:.35;text-decoration:line-through' : '';
+  const cls = classes.find(c=>c.id===s.classId);
+  const transferOK = isTransferComplete(s.id);
+  const transferCell = transferOK
+    ? `<span class="doc-toggle s2" title="전입 완료" style="cursor:default">✓✓</span>`
+    : `<span class="doc-toggle" title="전입 미완료" style="cursor:default">−</span>`;
+  const cb = (field, label) => {
+    const val = sn[field] || 0;
+    const cls2 = val===1?'s1':val===2?'s2':'';
+    const icon = val===1?'✓':val===2?'✓✓':'';
+    const state = val===0?'미확인':val===1?'담임확인':'완료';
+    return `<button class="doc-toggle ${cls2}" onclick="cycleSnDoc('${s.id}','${field}',this)" title="${label} (${state})">${icon}</button>`;
+  };
+  const noteInput = `<input type="text" class="notes-input" value="${(sn.notes||'').replace(/"/g,'&quot;')}" 
+    onchange="updateSnNotes('${s.id}',this.value)" placeholder="특이사항"
+    style="width:100%;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:14px;font-family:'Noto Sans KR',sans-serif">`;
+  const withdrawBtn = `<button class="btn ${isOut?'btn-red':'btn-ghost'} btn-sm" onclick="toggleWithdrawn('${s.id}',${!isOut})">${isOut?'취소':'퇴소'}</button>`;
+  const actions = `<td><div class="tbl-actions">
+    <button class="btn btn-red btn-sm" onclick="delSnRecord('${s.id}','${s.name}')">초기화</button>
+  </div></td>`;
+  const clsCol = isTeacher ? '' : `<td style="${dimStyle}">${cls?cls.name:'-'}</td>`;
+  return `<tr>
+    <td style="${dimStyle}">${s.studentId||'-'}</td>
+    <td style="${dimStyle}"><strong>${s.name||'-'}</strong> ${isOut?'<span class="bdg bdg-red">퇴소</span>':''}</td>
+    <td style="${dimStyle}">${s.gender||'-'}</td>
+    ${clsCol}
+    <td class="center">${transferCell}</td>
+    <td class="center">${cb('charter','초본')}</td>
+    <td class="center">${cb('snIdCard','신분증')}</td>
+    <td class="center">${cb('qualDoc','응시자격확인서류')}</td>
+    <td class="center">${cb('fee','수수료')}</td>
+    <td>${noteInput}</td>
+    <td class="center">${withdrawBtn}</td>
+    ${actions}
+  </tr>`;
+}
+
+// 관리자용 수능 원서접수 렌더링
+function renderSuneung() {
+  if (!classes.length) {
+    $('snBody').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:30px">반을 먼저 추가해 주세요.</td></tr>`;
+    return;
+  }
+  // 반 필터 chips
+  const chips = $('snClsChips');
+  if (chips) {
+    chips.innerHTML = `<span class="chip ${!activeClsFilter?'active':''}" onclick="snSetCls(null)">전체</span>` +
+      classes.map(c=>`<span class="chip ${activeClsFilter===c.id?'active':''}" onclick="snSetCls('${c.id}')">${c.name}</span>`).join('');
+  }
+  const q = ($('snSearch')?.value || '').trim().toLowerCase();
+  let list = students.slice();
+  if (activeClsFilter) list = list.filter(s=>s.classId===activeClsFilter);
+  if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
+  // 반 → 이름 순 정렬
+  list.sort((a,b) => {
+    const ca = classes.find(c=>c.id===a.classId)?.name || '';
+    const cb = classes.find(c=>c.id===b.classId)?.name || '';
+    if (ca !== cb) return ca.localeCompare(cb);
+    return (a.name||'').localeCompare(b.name||'');
+  });
+  if (!list.length) {
+    $('snBody').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+    return;
+  }
+  $('snBody').innerHTML = list.map(s=>suneungRow(s,false)).join('');
+}
+
+window.snSetCls = (id) => { activeClsFilter = id; renderSuneung(); };
+
+// 담임용 수능 원서접수 렌더링
+function renderMySuneung() {
+  const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : []);
+  const q = ($('mySnSearch')?.value || '').trim().toLowerCase();
+  let list = students.filter(s=>myClassIds.includes(s.classId));
+  if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
+  list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  if (!list.length) {
+    $('mySnBody').innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+    return;
+  }
+  $('mySnBody').innerHTML = list.map(s=>suneungRow(s,true)).join('');
+}
+
+// 담임용 스케줄 (전체 스케줄, 날짜별 표만)
 function renderAllSchedule() {
   const grouped = {};
   schedules.forEach(s => {
@@ -1727,6 +1942,8 @@ window.delStudent = async (id,name) => {
   if(!confirm(`${name} 학생을 삭제할까요?`)) return;
   await deleteDoc(doc(db,'students',id));
   await deleteDoc(doc(db,'records',id));
+  try { await deleteDoc(doc(db,'suneungRecords',id)); } catch(e) {} // 수능 기록 있으면 함께 삭제
+  suneungRecords = suneungRecords.filter(r=>r.id!==id);
   toast('삭제되었습니다.'); await reload();
   meDoc.role==='staff'?renderStudents():renderMyClass();
 };
