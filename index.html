@@ -341,6 +341,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
                   <th class="center">신분증</th>
                   <th class="center">응시자격확인서류</th>
                   <th class="center">수수료</th>
+                  <th>차량</th>
                   <th>비고</th>
                   <th class="center">퇴소</th>
                   <th></th>
@@ -371,6 +372,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
                   <th class="center">신분증</th>
                   <th class="center">응시자격확인서류</th>
                   <th class="center">수수료</th>
+                  <th>차량</th>
                   <th>비고</th>
                   <th class="center">퇴소</th>
                   <th></th>
@@ -981,9 +983,14 @@ async function reload() {
   const rsSnap = await getDocs(collection(db,'records'));
   records = rsSnap.docs.map(d=>({id:d.id,...d.data()}));
 
-  // suneungRecords 로드 (수능 원서접수)
-  const snSnap = await getDocs(collection(db,'suneungRecords'));
-  suneungRecords = snSnap.docs.map(d=>({id:d.id,...d.data()}));
+  // suneungRecords 로드 (수능 원서접수) — Security Rules 미설정 시에도 로그인 자체는 진행되도록 방어
+  try {
+    const snSnap = await getDocs(collection(db,'suneungRecords'));
+    suneungRecords = snSnap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) {
+    console.warn('[suneungRecords] 로드 실패 - Firestore Rules 확인 필요:', e.message);
+    suneungRecords = [];
+  }
 }
 
 // records 실시간 리스너 설정
@@ -1398,6 +1405,26 @@ window.updateNotes = async (studentId, val) => {
 
 // ── 수능 원서접수 ──
 
+// 2027학년도 수능 원서접수 차량 목록 (엑셀 '일정차량' 시트 기준)
+// 연도가 바뀌면 이 배열만 교체하면 됨
+const VEHICLES = [
+  '①_24일(월)_2교시_1호차',
+  '①_24일(월)_2교시_2호차',
+  '②_24일(월)_3교시_3호차',
+  '③_24일(월)_4교시_1호차',
+  '③_24일(월)_4교시_2호차',
+  '④_24일(월)_5교시_1호차',
+  '④_24일(월)_5교시_3호차',
+  '⑤_24일(월)_6교시_2호차',
+  '⑥_24일(월)_7교시_1호차',
+  '⑥_24일(월)_7교시_3호차',
+  '⑦_24일(월)_8교시_2호차',
+  '⑧_27일(목)_2교시_1호차',
+  '⑧_27일(목)_2교시_2호차',
+  '⑨_27일(목)_4교시_1호차',
+  '⑨_27일(목)_4교시_2호차',
+];
+
 // 전입여부 자동 판정 (전입신고서✓✓ + 신분증✓✓, 또는 회차=개별완료)
 function isTransferComplete(studentId) {
   const r = records.find(r=>r.id===studentId) || {};
@@ -1435,6 +1462,14 @@ window.updateSnNotes = async (studentId, val) => {
   if(r) { r.notes=val; r.updatedBy=by; } else suneungRecords.push({id:studentId, notes:val, updatedBy:by});
 };
 
+// 수능 원서접수 차량 배정 저장
+window.updateSnVehicle = async (studentId, val) => {
+  const by = meDoc.name || '직원';
+  await setDoc(doc(db,'suneungRecords',studentId), {vehicle:val, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
+  const r=suneungRecords.find(r=>r.id===studentId);
+  if(r) { r.vehicle=val; r.updatedBy=by; } else suneungRecords.push({id:studentId, vehicle:val, updatedBy:by});
+};
+
 // 수능 원서접수 기록 초기화 (suneungRecords 문서만 삭제, 학생 자체는 유지)
 window.delSnRecord = async (studentId, name) => {
   if(!confirm(`${name} 학생의 수능 원서접수 기록을 초기화할까요?\n(학생 자체는 삭제되지 않으며, 문서 체크 상태와 비고만 지워집니다.)`)) return;
@@ -1467,6 +1502,11 @@ function suneungRow(s, isTeacher=false) {
   const noteInput = `<input type="text" class="notes-input" value="${(sn.notes||'').replace(/"/g,'&quot;')}" 
     onchange="updateSnNotes('${s.id}',this.value)" placeholder="특이사항"
     style="width:100%;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:14px;font-family:'Noto Sans KR',sans-serif">`;
+  const curVehicle = sn.vehicle || '';
+  const vehicleOptions = `<option value="">미배정</option>` +
+    VEHICLES.map(v => `<option value="${v}" ${v===curVehicle?'selected':''}>${v}</option>`).join('');
+  const vehicleSelect = `<select onchange="updateSnVehicle('${s.id}',this.value)"
+    style="width:100%;min-width:180px;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;background:#fff">${vehicleOptions}</select>`;
   const withdrawBtn = `<button class="btn ${isOut?'btn-red':'btn-ghost'} btn-sm" onclick="toggleWithdrawn('${s.id}',${!isOut})">${isOut?'취소':'퇴소'}</button>`;
   const actions = `<td><div class="tbl-actions">
     <button class="btn btn-red btn-sm" onclick="delSnRecord('${s.id}','${s.name}')">초기화</button>
@@ -1482,6 +1522,7 @@ function suneungRow(s, isTeacher=false) {
     <td class="center">${cb('snIdCard','신분증')}</td>
     <td class="center">${cb('qualDoc','응시자격확인서류')}</td>
     <td class="center">${cb('fee','수수료')}</td>
+    <td>${vehicleSelect}</td>
     <td>${noteInput}</td>
     <td class="center">${withdrawBtn}</td>
     ${actions}
@@ -1491,7 +1532,7 @@ function suneungRow(s, isTeacher=false) {
 // 관리자용 수능 원서접수 렌더링
 function renderSuneung() {
   if (!classes.length) {
-    $('snBody').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:30px">반을 먼저 추가해 주세요.</td></tr>`;
+    $('snBody').innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--t3);padding:30px">반을 먼저 추가해 주세요.</td></tr>`;
     return;
   }
   // 반 필터 chips
@@ -1512,7 +1553,7 @@ function renderSuneung() {
     return (a.name||'').localeCompare(b.name||'');
   });
   if (!list.length) {
-    $('snBody').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+    $('snBody').innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
     return;
   }
   $('snBody').innerHTML = list.map(s=>suneungRow(s,false)).join('');
@@ -1528,7 +1569,7 @@ function renderMySuneung() {
   if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
   list.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   if (!list.length) {
-    $('mySnBody').innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+    $('mySnBody').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
     return;
   }
   $('mySnBody').innerHTML = list.map(s=>suneungRow(s,true)).join('');
