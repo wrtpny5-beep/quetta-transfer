@@ -465,6 +465,36 @@ th:hover .sort-ind{opacity:1}
             </table>
           </div>
         </div>
+
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><div class="card-head-title">원서접수 배차정보 업데이트</div></div>
+          <div class="card-body">
+            <div class="info-box">
+              🚌 <strong>학번 기준으로 차량 배정만 업데이트합니다.</strong><br>
+              필수 컬럼: <code>학번</code>, <code>차량</code> (다른 컬럼은 무시)<br>
+              차량 값은 앱의 15대 차량 목록과 정확히 일치해야 합니다. 셀이 비어있으면 <b>미배정</b>으로 처리됩니다.<br>
+              다른 필드(초본·신분증·학력증빙·비고 등)는 <b>건드리지 않습니다</b>.
+            </div>
+            <label class="upload-zone" for="vehicleImportFile">
+              <div class="uz-icon">🚌</div>
+              <div class="uz-text">클릭하거나 파일을 드래그하세요</div>
+              <div class="uz-sub">.csv · .xlsx · .xls</div>
+            </label>
+            <input type="file" id="vehicleImportFile" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleVehicleImport(this)">
+          </div>
+        </div>
+        <div class="card" id="vehicleImportPreviewCard" style="display:none">
+          <div class="card-head">
+            <div class="card-head-title">🚌 미리보기 <span id="vehicleImportCount" style="font-weight:400;font-size:12px;color:var(--t2)"></span></div>
+            <button class="btn btn-gold btn-sm" onclick="commitVehicleImport()">💾 배차 업데이트 실행</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>학번</th><th>이름 (앱)</th><th>차량</th><th class="center">상태</th></tr></thead>
+              <tbody id="vehicleImportBody"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       <!-- 반 관리 -->
@@ -2654,6 +2684,109 @@ window.downloadSample = () => {
   XLSX.writeFile(wb, 'QUETTA_전입신고_샘플.xlsx');
   toast('샘플 파일이 다운로드되었습니다.');
 };
+
+// ── 원서접수 배차정보 업데이트 ──
+let vehicleImportRows = [];
+
+window.handleVehicleImport = input => {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    let rows = [];
+    if (file.name.endsWith('.csv')) {
+      const text = new TextDecoder('utf-8').decode(e.target.result);
+      rows = text.split('\n').map(l => l.split(',').map(c => c.trim().replace(/\r/,'')));
+    } else {
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+    }
+    if (!rows.length) { toast('빈 파일입니다.',true); return; }
+
+    // 헤더 행 찾기 (학번 + 차량 컬럼 인덱스 파악)
+    let headerRow = -1, idIdx = -1, vehIdx = -1;
+    for (let i = 0; i < Math.min(rows.length, 10); i++) {
+      const r = rows[i];
+      const idx1 = r.findIndex(c => String(c).trim() === '학번');
+      const idx2 = r.findIndex(c => String(c).trim() === '차량');
+      if (idx1 >= 0 && idx2 >= 0) { headerRow = i; idIdx = idx1; vehIdx = idx2; break; }
+    }
+    if (headerRow < 0) { toast('헤더에 "학번"과 "차량" 컬럼이 필요합니다.', true); return; }
+
+    vehicleImportRows = [];
+    for (let i = headerRow + 1; i < rows.length; i++) {
+      const r = rows[i];
+      const sid = String(r[idIdx] || '').trim();
+      const vRaw = String(r[vehIdx] || '').trim();
+      if (!sid) continue;
+      // 앱 학생 매칭 + 차량 유효성 판정
+      const stu = students.find(s => String(s.studentId) === sid);
+      let status;
+      if (!stu) status = 'notfound';
+      else if (vRaw === '' || vRaw === '-' || vRaw === '미배정') status = 'clear';
+      else if (VEHICLES.includes(vRaw)) status = 'ok';
+      else status = 'invalid';
+      vehicleImportRows.push({
+        studentId: sid,
+        vehicle: (status === 'clear') ? '' : vRaw,
+        appName: stu ? stu.name : null,
+        appId: stu ? stu.id : null,
+        status
+      });
+    }
+
+    if (!vehicleImportRows.length) { toast('유효한 데이터가 없습니다.', true); return; }
+
+    // 미리보기 렌더
+    const okCnt = vehicleImportRows.filter(r=>r.status==='ok').length;
+    const clearCnt = vehicleImportRows.filter(r=>r.status==='clear').length;
+    const nfCnt = vehicleImportRows.filter(r=>r.status==='notfound').length;
+    const invCnt = vehicleImportRows.filter(r=>r.status==='invalid').length;
+    $('vehicleImportCount').textContent = `총 ${vehicleImportRows.length}건 (배정 ${okCnt} / 미배정 ${clearCnt} / 학생없음 ${nfCnt} / 차량이상 ${invCnt})`;
+    $('vehicleImportBody').innerHTML = vehicleImportRows.map(r => {
+      let badge, style;
+      if (r.status === 'ok')       { badge = '<span class="bdg bdg-gold">배정</span>'; style = ''; }
+      else if (r.status === 'clear') { badge = '<span class="bdg bdg-gray">미배정</span>'; style = ''; }
+      else if (r.status === 'notfound') { badge = '<span class="bdg bdg-red">앱에 학번 없음</span>'; style = 'opacity:.5'; }
+      else                         { badge = '<span class="bdg bdg-red">차량 목록에 없음</span>'; style = 'opacity:.5'; }
+      const vehShow = r.vehicle || '<span style="color:var(--t3)">(미배정)</span>';
+      return `<tr style="${style}">
+        <td>${r.studentId}</td>
+        <td>${r.appName || '<span style="color:var(--t3)">(없음)</span>'}</td>
+        <td style="font-size:12px">${vehShow}</td>
+        <td class="center">${badge}</td>
+      </tr>`;
+    }).join('');
+    $('vehicleImportPreviewCard').style.display = '';
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+window.commitVehicleImport = async () => {
+  const toApply = vehicleImportRows.filter(r => r.status === 'ok' || r.status === 'clear');
+  if (!toApply.length) { toast('적용할 유효한 데이터가 없습니다.', true); return; }
+  if (!confirm(`${toApply.length}건의 차량 배정을 업데이트합니다. 진행할까요?`)) return;
+
+  const by = meDoc.name || '직원';
+  let ok = 0, errors = 0;
+  const CHUNK = 10;
+  for (let i = 0; i < toApply.length; i += CHUNK) {
+    const batch = toApply.slice(i, i + CHUNK);
+    await Promise.all(batch.map(async r => {
+      try {
+        await setDoc(doc(db,'suneungRecords',r.appId), {vehicle:r.vehicle, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
+        const cur = suneungRecords.find(x => x.id === r.appId);
+        if (cur) cur.vehicle = r.vehicle;
+        else suneungRecords.push({id: r.appId, vehicle: r.vehicle});
+        ok++;
+      } catch (e) { errors++; }
+    }));
+  }
+  toast(`${ok}건 업데이트 완료${errors?` (에러 ${errors}건)`:''}`);
+  $('vehicleImportPreviewCard').style.display = 'none';
+  vehicleImportRows = [];
+};
+
 window.exportClass = () => {
   const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : null);
   let list = myClassIds
