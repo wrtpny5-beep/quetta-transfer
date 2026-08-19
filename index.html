@@ -1564,6 +1564,10 @@ window.updateSnVehicle = async (studentId, val) => {
   await setDoc(doc(db,'suneungRecords',studentId), {vehicle:val, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
   const r=suneungRecords.find(r=>r.id===studentId);
   if(r) { r.vehicle=val; r.updatedBy=by; } else suneungRecords.push({id:studentId, vehicle:val, updatedBy:by});
+  // 출발시간 셀 즉시 갱신
+  const activeId = document.querySelector('.view.active')?.id;
+  if (activeId === 'vSuneung') renderSuneung();
+  else if (activeId === 'vMySuneung') renderMySuneung();
 };
 
 // 차량 배정 일괄 import (콘솔에서 window.__importVehicles(mappings) 로 호출)
