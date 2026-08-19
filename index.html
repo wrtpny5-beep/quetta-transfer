@@ -342,9 +342,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
                   <th class="center">응시자격확인서류</th>
                   <th class="center">수수료</th>
                   <th>차량</th>
+                  <th class="center">출발시간</th>
                   <th>비고</th>
                   <th class="center">퇴소</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody id="snBody"></tbody>
@@ -373,9 +373,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
                   <th class="center">응시자격확인서류</th>
                   <th class="center">수수료</th>
                   <th>차량</th>
+                  <th class="center">출발시간</th>
                   <th>비고</th>
                   <th class="center">퇴소</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody id="mySnBody"></tbody>
@@ -1607,17 +1607,6 @@ window.__importVehicles = async (mappings) => {
   return { ok, notFound: notFound.length, errors: errors.length };
 };
 
-// 수능 원서접수 기록 초기화 (suneungRecords 문서만 삭제, 학생 자체는 유지)
-window.delSnRecord = async (studentId, name) => {
-  if(!confirm(`${name} 학생의 수능 원서접수 기록을 초기화할까요?\n(학생 자체는 삭제되지 않으며, 문서 체크 상태와 비고만 지워집니다.)`)) return;
-  try {
-    await deleteDoc(doc(db,'suneungRecords',studentId));
-    suneungRecords = suneungRecords.filter(r=>r.id!==studentId);
-    toast('초기화되었습니다.');
-    meDoc.role==='staff' ? renderSuneung() : renderMySuneung();
-  } catch(e) { toast('실패: '+e.message, true); }
-};
-
 // 수능 원서접수 행 렌더링
 function suneungRow(s, isTeacher=false) {
   const r = records.find(r=>r.id===s.id) || {}; // 퇴소/전입 상태 참조
@@ -1644,10 +1633,9 @@ function suneungRow(s, isTeacher=false) {
     VEHICLES.map(v => `<option value="${v}" ${v===curVehicle?'selected':''}>${v}</option>`).join('');
   const vehicleSelect = `<select onchange="updateSnVehicle('${s.id}',this.value)"
     style="width:100%;min-width:180px;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;background:#fff">${vehicleOptions}</select>`;
+  const timeEntry = curVehicle ? VEHICLE_SCHEDULE.find(v => v.vehicle === curVehicle) : null;
+  const timeCell = timeEntry ? `<span class="bdg bdg-gold">${timeEntry.time}</span>` : '<span style="color:var(--t3)">−</span>';
   const withdrawBtn = `<button class="btn ${isOut?'btn-red':'btn-ghost'} btn-sm" onclick="toggleWithdrawn('${s.id}',${!isOut})">${isOut?'취소':'퇴소'}</button>`;
-  const actions = `<td><div class="tbl-actions">
-    <button class="btn btn-red btn-sm" onclick="delSnRecord('${s.id}','${s.name}')">초기화</button>
-  </div></td>`;
   const clsCol = isTeacher ? '' : `<td style="${dimStyle}">${cls?cls.name:'-'}</td>`;
   return `<tr>
     <td style="${dimStyle}">${s.studentId||'-'}</td>
@@ -1660,9 +1648,9 @@ function suneungRow(s, isTeacher=false) {
     <td class="center">${cb('qualDoc','응시자격확인서류')}</td>
     <td class="center">${cb('fee','수수료')}</td>
     <td>${vehicleSelect}</td>
+    <td class="center">${timeCell}</td>
     <td>${noteInput}</td>
     <td class="center">${withdrawBtn}</td>
-    ${actions}
   </tr>`;
 }
 
