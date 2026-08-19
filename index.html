@@ -329,20 +329,25 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
         <div class="tool-bar">
           <input class="search-input" id="snSearch" placeholder="이름 또는 학번 검색" oninput="renderSuneung()">
           <div id="snClsChips"></div>
+          <button class="btn btn-gold" onclick="exportSuneungExcel()">📥 엑셀 내보내기</button>
         </div>
         <div class="card">
           <div class="tbl-wrap">
-            <table class="tbl">
+            <table class="tbl" id="snTable">
               <thead>
                 <tr>
-                  <th>학번</th><th>성명</th><th>성별</th><th>반</th>
-                  <th class="center">전입여부</th>
-                  <th class="center">초본</th>
-                  <th class="center">신분증</th>
-                  <th class="center">응시자격확인서류</th>
-                  <th class="center">수수료</th>
-                  <th>차량</th>
-                  <th class="center">출발시간</th>
+                  <th onclick="snSort('studentId')" style="cursor:pointer">학번<span class="sort-ind" data-col="studentId"></span></th>
+                  <th onclick="snSort('name')" style="cursor:pointer">성명<span class="sort-ind" data-col="name"></span></th>
+                  <th onclick="snSort('gender')" style="cursor:pointer">성별<span class="sort-ind" data-col="gender"></span></th>
+                  <th onclick="snSort('className')" style="cursor:pointer">반<span class="sort-ind" data-col="className"></span></th>
+                  <th class="center" onclick="snSort('transfer')" style="cursor:pointer">전입여부<span class="sort-ind" data-col="transfer"></span></th>
+                  <th class="center" onclick="snSort('online')" style="cursor:pointer">온라인<span class="sort-ind" data-col="online"></span></th>
+                  <th class="center" onclick="snSort('charter')" style="cursor:pointer">초본<span class="sort-ind" data-col="charter"></span></th>
+                  <th class="center" onclick="snSort('snIdCard')" style="cursor:pointer">신분증<span class="sort-ind" data-col="snIdCard"></span></th>
+                  <th class="center" onclick="snSort('qualDoc')" style="cursor:pointer">학력증빙서류<span class="sort-ind" data-col="qualDoc"></span></th>
+                  <th class="center" onclick="snSort('offlineDocs')" style="cursor:pointer" title="응시원서, 사진, 수수료">온라인X<span class="sort-ind" data-col="offlineDocs"></span></th>
+                  <th onclick="snSort('vehicle')" style="cursor:pointer">차량<span class="sort-ind" data-col="vehicle"></span></th>
+                  <th class="center" onclick="snSort('time')" style="cursor:pointer">출발시간<span class="sort-ind" data-col="time"></span></th>
                   <th>비고</th>
                   <th class="center">퇴소</th>
                 </tr>
@@ -360,20 +365,24 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
         </div>
         <div class="tool-bar">
           <input class="search-input" id="mySnSearch" placeholder="이름 또는 학번 검색" oninput="renderMySuneung()">
+          <button class="btn btn-gold" onclick="exportSuneungExcel()">📥 엑셀 내보내기</button>
         </div>
         <div class="card">
           <div class="tbl-wrap">
-            <table class="tbl">
+            <table class="tbl" id="mySnTable">
               <thead>
                 <tr>
-                  <th>학번</th><th>성명</th><th>성별</th>
-                  <th class="center">전입여부</th>
-                  <th class="center">초본</th>
-                  <th class="center">신분증</th>
-                  <th class="center">응시자격확인서류</th>
-                  <th class="center">수수료</th>
-                  <th>차량</th>
-                  <th class="center">출발시간</th>
+                  <th onclick="mySnSort('studentId')" style="cursor:pointer">학번<span class="sort-ind" data-mycol="studentId"></span></th>
+                  <th onclick="mySnSort('name')" style="cursor:pointer">성명<span class="sort-ind" data-mycol="name"></span></th>
+                  <th onclick="mySnSort('gender')" style="cursor:pointer">성별<span class="sort-ind" data-mycol="gender"></span></th>
+                  <th class="center" onclick="mySnSort('transfer')" style="cursor:pointer">전입여부<span class="sort-ind" data-mycol="transfer"></span></th>
+                  <th class="center" onclick="mySnSort('online')" style="cursor:pointer">온라인<span class="sort-ind" data-mycol="online"></span></th>
+                  <th class="center" onclick="mySnSort('charter')" style="cursor:pointer">초본<span class="sort-ind" data-mycol="charter"></span></th>
+                  <th class="center" onclick="mySnSort('snIdCard')" style="cursor:pointer">신분증<span class="sort-ind" data-mycol="snIdCard"></span></th>
+                  <th class="center" onclick="mySnSort('qualDoc')" style="cursor:pointer">학력증빙서류<span class="sort-ind" data-mycol="qualDoc"></span></th>
+                  <th class="center" onclick="mySnSort('offlineDocs')" style="cursor:pointer" title="응시원서, 사진, 수수료">온라인X<span class="sort-ind" data-mycol="offlineDocs"></span></th>
+                  <th onclick="mySnSort('vehicle')" style="cursor:pointer">차량<span class="sort-ind" data-mycol="vehicle"></span></th>
+                  <th class="center" onclick="mySnSort('time')" style="cursor:pointer">출발시간<span class="sort-ind" data-mycol="time"></span></th>
                   <th>비고</th>
                   <th class="center">퇴소</th>
                 </tr>
@@ -1253,6 +1262,8 @@ function renderMyClass() {
 // ── 정렬 ──
 let sortCol = 'name';
 let sortAsc = true;
+let snSortCol = null, snSortAsc = true;
+let mySnSortCol = null, mySnSortAsc = true;
 
 window.setSortCol = col => {
   if (sortCol === col) sortAsc = !sortAsc;
@@ -1527,25 +1538,30 @@ function isTransferComplete(studentId) {
   return (r.form===2 && r.idCard===2) || r.round==='개별완료';
 }
 
-// 수능 원서접수 3단계 토글
+// 수능 원서접수 2단계 토글 (미체크 ↔ 완료)
 window.cycleSnDoc = async (studentId, field, btn) => {
   const by = meDoc.name || '직원';
   const cur = suneungRecords.find(r=>r.id===studentId)?.[field] || 0;
-  const next = cur >= 2 ? 0 : cur + 1;
+  const next = cur === 2 ? 0 : 2;
 
   // 낙관적 UI 업데이트
-  btn.className = `doc-toggle${next===1?' s1':next===2?' s2':''}`;
-  btn.textContent = next===1?'✓':next===2?'✓✓':'';
-  btn.title = `${btn.title.split(' (')[0]} (${next===0?'미확인':next===1?'담임확인':'완료'})`;
+  btn.className = `doc-toggle${next===2?' s2':''}`;
+  btn.textContent = next===2?'✓✓':'';
 
   try {
     await setDoc(doc(db,'suneungRecords',studentId), {[field]:next, updatedBy:by, updatedAt:serverTimestamp()}, {merge:true});
     const idx = suneungRecords.findIndex(r=>r.id===studentId);
     if(idx>=0) { suneungRecords[idx][field]=next; suneungRecords[idx].updatedBy=by; }
     else suneungRecords.push({id:studentId, [field]:next, updatedBy:by});
+    // 온라인 토글 시 온라인X 활성/비활성 재렌더
+    if (field === 'online') {
+      const activeId = document.querySelector('.view.active')?.id;
+      if (activeId === 'vSuneung') renderSuneung();
+      else if (activeId === 'vMySuneung') renderMySuneung();
+    }
   } catch(e) {
-    btn.className = `doc-toggle${cur===1?' s1':cur===2?' s2':''}`;
-    btn.textContent = cur===1?'✓':cur===2?'✓✓':'';
+    btn.className = `doc-toggle${cur===2?' s2':''}`;
+    btn.textContent = cur===2?'✓✓':'';
     toast('저장 실패',true);
   }
 };
@@ -1622,21 +1638,26 @@ function suneungRow(s, isTeacher=false) {
   const transferCell = transferOK
     ? `<span class="doc-toggle s2" title="전입 완료" style="cursor:default">✓✓</span>`
     : `<span class="doc-toggle" title="전입 미완료" style="cursor:default">−</span>`;
-  const cb = (field, label) => {
+  // 2단계 토글 (미체크 ↔ 완료)
+  const cb = (field, label, disabled=false) => {
     const val = sn[field] || 0;
-    const cls2 = val===1?'s1':val===2?'s2':'';
-    const icon = val===1?'✓':val===2?'✓✓':'';
-    const state = val===0?'미확인':val===1?'담임확인':'완료';
+    const cls2 = val===2?'s2':'';
+    const icon = val===2?'✓✓':'';
+    const state = val===2?'완료':'미체크';
+    if (disabled) {
+      return `<span class="doc-toggle" title="온라인 접수 완료 - 오프라인 서류 불필요" style="opacity:.3;cursor:not-allowed">−</span>`;
+    }
     return `<button class="doc-toggle ${cls2}" onclick="cycleSnDoc('${s.id}','${field}',this)" title="${label} (${state})">${icon}</button>`;
   };
+  const isOnline = (sn.online || 0) === 2;
   const noteInput = `<input type="text" class="notes-input" value="${(sn.notes||'').replace(/"/g,'&quot;')}" 
     onchange="updateSnNotes('${s.id}',this.value)" placeholder="특이사항"
-    style="width:100%;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:14px;font-family:'Noto Sans KR',sans-serif">`;
+    style="width:100%;min-width:120px;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif">`;
   const curVehicle = sn.vehicle || '';
   const vehicleOptions = `<option value="">미배정</option>` +
     VEHICLES.map(v => `<option value="${v}" ${v===curVehicle?'selected':''}>${v}</option>`).join('');
   const vehicleSelect = `<select onchange="updateSnVehicle('${s.id}',this.value)"
-    style="width:100%;min-width:180px;padding:5px 8px;border:1.5px solid var(--warm2);border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;background:#fff">${vehicleOptions}</select>`;
+    style="width:100%;min-width:130px;padding:5px 6px;border:1.5px solid var(--warm2);border-radius:6px;font-size:11px;font-family:'Noto Sans KR',sans-serif;background:#fff">${vehicleOptions}</select>`;
   const timeEntry = curVehicle ? VEHICLE_SCHEDULE.find(v => v.vehicle === curVehicle) : null;
   const timeCell = timeEntry ? `<span class="bdg bdg-gold">${timeEntry.time}</span>` : '<span style="color:var(--t3)">−</span>';
   const withdrawBtn = `<button class="btn ${isOut?'btn-red':'btn-ghost'} btn-sm" onclick="toggleWithdrawn('${s.id}',${!isOut})">${isOut?'취소':'퇴소'}</button>`;
@@ -1647,13 +1668,14 @@ function suneungRow(s, isTeacher=false) {
     <td style="${dimStyle}">${s.gender||'-'}</td>
     ${clsCol}
     <td class="center">${transferCell}</td>
+    <td class="center">${cb('online','온라인')}</td>
     <td class="center">${cb('charter','초본')}</td>
     <td class="center">${cb('snIdCard','신분증')}</td>
-    <td class="center">${cb('qualDoc','응시자격확인서류')}</td>
-    <td class="center">${cb('fee','수수료')}</td>
+    <td class="center">${cb('qualDoc','학력증빙서류')}</td>
+    <td class="center" title="응시원서, 사진, 수수료">${cb('offlineDocs','온라인X (응시원서, 사진, 수수료)', isOnline)}</td>
     <td>${vehicleSelect}</td>
     <td class="center">${timeCell}</td>
-    <td>${noteInput}</td>
+    <td style="max-width:180px">${noteInput}</td>
     <td class="center">${withdrawBtn}</td>
   </tr>`;
 }
@@ -1676,24 +1698,23 @@ function renderSuneung() {
   list = list.filter(s => !records.find(r=>r.id===s.id)?.withdrawn);
   if (activeClsFilter) list = list.filter(s=>s.classId===activeClsFilter);
   if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
-  // 정렬: 전입완료 우선 → 반 → 이름
-  list.sort((a,b) => {
-    const ta = isTransferComplete(a.id) ? 0 : 1;
-    const tb = isTransferComplete(b.id) ? 0 : 1;
-    if (ta !== tb) return ta - tb;
-    const ca = classes.find(c=>c.id===a.classId)?.name || '';
-    const cb = classes.find(c=>c.id===b.classId)?.name || '';
-    if (ca !== cb) return ca.localeCompare(cb);
-    return (a.name||'').localeCompare(b.name||'');
-  });
+  // 정렬: 사용자 지정 컬럼 있으면 그 컬럼, 없으면 기본(전입완료 우선 → 반 → 이름)
+  sortSuneungList(list, snSortCol, snSortAsc);
+  // 헤더 정렬 인디케이터 갱신
+  updateSortIndicators('snTable', snSortCol, snSortAsc);
   if (!list.length) {
-    $('snBody').innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+    $('snBody').innerHTML = `<tr><td colspan="14" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
     return;
   }
   $('snBody').innerHTML = list.map(s=>suneungRow(s,false)).join('');
 }
 
 window.snSetCls = (id) => { activeClsFilter = id; renderSuneung(); };
+window.snSort = (col) => {
+  if (snSortCol === col) snSortAsc = !snSortAsc;
+  else { snSortCol = col; snSortAsc = true; }
+  renderSuneung();
+};
 
 // 담임용 수능 원서접수 렌더링
 function renderMySuneung() {
@@ -1703,19 +1724,123 @@ function renderMySuneung() {
   // 퇴소생 제외
   list = list.filter(s => !records.find(r=>r.id===s.id)?.withdrawn);
   if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
-  // 정렬: 전입완료 우선 → 이름
-  list.sort((a,b) => {
-    const ta = isTransferComplete(a.id) ? 0 : 1;
-    const tb = isTransferComplete(b.id) ? 0 : 1;
-    if (ta !== tb) return ta - tb;
-    return (a.name||'').localeCompare(b.name||'');
-  });
+  sortSuneungList(list, mySnSortCol, mySnSortAsc);
+  updateSortIndicators('mySnTable', mySnSortCol, mySnSortAsc, 'mycol');
   if (!list.length) {
-    $('mySnBody').innerHTML = `<tr><td colspan="12" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
+    $('mySnBody').innerHTML = `<tr><td colspan="13" style="text-align:center;color:var(--t3);padding:30px">학생이 없습니다.</td></tr>`;
     return;
   }
   $('mySnBody').innerHTML = list.map(s=>suneungRow(s,true)).join('');
 }
+
+window.mySnSort = (col) => {
+  if (mySnSortCol === col) mySnSortAsc = !mySnSortAsc;
+  else { mySnSortCol = col; mySnSortAsc = true; }
+  renderMySuneung();
+};
+
+// 수능 원서접수 정렬 헬퍼 (관리자·담임 공통)
+function sortSuneungList(list, sortCol, asc) {
+  if (!sortCol) {
+    // 기본 정렬: 전입완료 우선 → 반 → 이름
+    list.sort((a,b) => {
+      const ta = isTransferComplete(a.id) ? 0 : 1;
+      const tb = isTransferComplete(b.id) ? 0 : 1;
+      if (ta !== tb) return ta - tb;
+      const ca = classes.find(c=>c.id===a.classId)?.name || '';
+      const cb = classes.find(c=>c.id===b.classId)?.name || '';
+      if (ca !== cb) return ca.localeCompare(cb);
+      return (a.name||'').localeCompare(b.name||'');
+    });
+    return;
+  }
+  const dir = asc ? 1 : -1;
+  list.sort((a,b) => {
+    const va = getSortValue(a, sortCol);
+    const vb = getSortValue(b, sortCol);
+    if (va < vb) return -1 * dir;
+    if (va > vb) return 1 * dir;
+    return (a.name||'').localeCompare(b.name||'');
+  });
+}
+
+function getSortValue(s, col) {
+  const sn = suneungRecords.find(r=>r.id===s.id) || {};
+  switch (col) {
+    case 'studentId': return s.studentId || '';
+    case 'name': return s.name || '';
+    case 'gender': return s.gender || '';
+    case 'className': return classes.find(c=>c.id===s.classId)?.name || '';
+    case 'transfer': return isTransferComplete(s.id) ? 1 : 0;
+    case 'online':
+    case 'charter':
+    case 'snIdCard':
+    case 'qualDoc':
+    case 'offlineDocs': return (sn[col] || 0) === 2 ? 1 : 0;
+    case 'vehicle': return sn.vehicle || '';
+    case 'time': {
+      const v = sn.vehicle; if (!v) return '';
+      const e = VEHICLE_SCHEDULE.find(x => x.vehicle === v);
+      return e ? e.time : '';
+    }
+    default: return '';
+  }
+}
+
+function updateSortIndicators(tableId, sortCol, asc, attr='col') {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  table.querySelectorAll('.sort-ind').forEach(el => {
+    const c = el.dataset[attr];
+    if (c === sortCol) el.textContent = asc ? ' ▲' : ' ▼';
+    else el.textContent = '';
+  });
+}
+
+// 수능 원서접수 엑셀 내보내기 (전체 데이터, 필터 무시)
+window.exportSuneungExcel = () => {
+  const rows = [['학번','성명','성별','반','전입여부','온라인','초본','신분증','학력증빙서류','온라인X','차량','출발시간','비고','퇴소']];
+  const list = students.slice().sort((a,b) => {
+    const ca = classes.find(c=>c.id===a.classId)?.name || '';
+    const cb = classes.find(c=>c.id===b.classId)?.name || '';
+    if (ca !== cb) return ca.localeCompare(cb);
+    return (a.name||'').localeCompare(b.name||'');
+  });
+  list.forEach(s => {
+    const r = records.find(r=>r.id===s.id) || {};
+    const sn = suneungRecords.find(x=>x.id===s.id) || {};
+    const cls = classes.find(c=>c.id===s.classId);
+    const timeEntry = sn.vehicle ? VEHICLE_SCHEDULE.find(v=>v.vehicle===sn.vehicle) : null;
+    const chk = v => (v===2 ? 'O' : '');
+    rows.push([
+      s.studentId || '',
+      s.name || '',
+      s.gender || '',
+      cls ? cls.name : '',
+      isTransferComplete(s.id) ? 'O' : '',
+      chk(sn.online),
+      chk(sn.charter),
+      chk(sn.snIdCard),
+      chk(sn.qualDoc),
+      chk(sn.offlineDocs),
+      sn.vehicle || '',
+      timeEntry ? timeEntry.time : '',
+      sn.notes || '',
+      r.withdrawn ? 'O' : ''
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  // 컬럼 너비 자동 조정
+  ws['!cols'] = [
+    {wch:8},{wch:10},{wch:6},{wch:8},{wch:8},{wch:8},{wch:6},{wch:8},{wch:12},{wch:8},{wch:28},{wch:10},{wch:20},{wch:6}
+  ];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '수능원서접수');
+  const today = new Date();
+  const fname = `QUETTA_수능원서접수_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  toast('엑셀 파일이 다운로드되었습니다.');
+};
 
 // 담임용 스케줄 (전체 스케줄, 날짜별 표만)
 function renderAllSchedule() {
