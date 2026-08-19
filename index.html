@@ -121,6 +121,9 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--cream);color:var(--t
 .tbl{width:100%;border-collapse:collapse;min-width:600px}
 .tbl th{text-align:left;padding:9px 12px;font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--t3);background:var(--cream);border-bottom:1px solid var(--warm2);white-space:nowrap;position:sticky;top:0;z-index:1}
 .tbl th.center,.tbl td.center{text-align:center}
+.sort-ind{display:inline-block;margin-left:4px;font-size:11px;color:var(--brand,#00B2BE);font-weight:700;opacity:.4;transition:opacity .15s}
+.sort-ind.active{opacity:1;color:var(--brand,#00B2BE)}
+th:hover .sort-ind{opacity:1}
 .tbl td{padding:10px 12px;border-bottom:1px solid var(--warm1);font-size:15px;vertical-align:middle}
 .tbl tr:last-child td{border-bottom:none}
 .tbl tbody tr:nth-child(odd) td{background:#fff}
@@ -1538,11 +1541,11 @@ function isTransferComplete(studentId) {
   return (r.form===2 && r.idCard===2) || r.round==='개별완료';
 }
 
-// 수능 원서접수 2단계 토글 (미체크 ↔ 완료)
+// 수능 원서접수 2단계 토글 (미체크 ↔ 완료) - 기존 값 1도 완료로 취급
 window.cycleSnDoc = async (studentId, field, btn) => {
   const by = meDoc.name || '직원';
   const cur = suneungRecords.find(r=>r.id===studentId)?.[field] || 0;
-  const next = cur === 2 ? 0 : 2;
+  const next = cur >= 1 ? 0 : 2;  // 체크된 상태(1 또는 2) → 미체크, 미체크 → 완료
 
   // 낙관적 UI 업데이트
   btn.className = `doc-toggle${next===2?' s2':''}`;
@@ -1560,8 +1563,8 @@ window.cycleSnDoc = async (studentId, field, btn) => {
       else if (activeId === 'vMySuneung') renderMySuneung();
     }
   } catch(e) {
-    btn.className = `doc-toggle${cur===2?' s2':''}`;
-    btn.textContent = cur===2?'✓✓':'';
+    btn.className = `doc-toggle${cur>=1?' s2':''}`;
+    btn.textContent = cur>=1?'✓✓':'';
     toast('저장 실패',true);
   }
 };
@@ -1638,12 +1641,13 @@ function suneungRow(s, isTeacher=false) {
   const transferCell = transferOK
     ? `<span class="doc-toggle s2" title="전입 완료" style="cursor:default">✓✓</span>`
     : `<span class="doc-toggle" title="전입 미완료" style="cursor:default">−</span>`;
-  // 2단계 토글 (미체크 ↔ 완료)
+  // 2단계 토글 (미체크 ↔ 완료) — 기존 값 1(구 담임확인)도 완료로 표시
   const cb = (field, label, disabled=false) => {
     const val = sn[field] || 0;
-    const cls2 = val===2?'s2':'';
-    const icon = val===2?'✓✓':'';
-    const state = val===2?'완료':'미체크';
+    const checked = val >= 1;
+    const cls2 = checked?'s2':'';
+    const icon = checked?'✓✓':'';
+    const state = checked?'완료':'미체크';
     if (disabled) {
       return `<span class="doc-toggle" title="온라인 접수 완료 - 오프라인 서류 불필요" style="opacity:.3;cursor:not-allowed">−</span>`;
     }
@@ -1776,7 +1780,7 @@ function getSortValue(s, col) {
     case 'charter':
     case 'snIdCard':
     case 'qualDoc':
-    case 'offlineDocs': return (sn[col] || 0) === 2 ? 1 : 0;
+    case 'offlineDocs': return (sn[col] || 0) >= 1 ? 1 : 0;
     case 'vehicle': return sn.vehicle || '';
     case 'time': {
       const v = sn.vehicle; if (!v) return '';
@@ -1792,8 +1796,13 @@ function updateSortIndicators(tableId, sortCol, asc, attr='col') {
   if (!table) return;
   table.querySelectorAll('.sort-ind').forEach(el => {
     const c = el.dataset[attr];
-    if (c === sortCol) el.textContent = asc ? ' ▲' : ' ▼';
-    else el.textContent = '';
+    if (c === sortCol) {
+      el.textContent = asc ? '▲' : '▼';
+      el.classList.add('active');
+    } else {
+      el.textContent = '⇅';
+      el.classList.remove('active');
+    }
   });
 }
 
@@ -1811,7 +1820,7 @@ window.exportSuneungExcel = () => {
     const sn = suneungRecords.find(x=>x.id===s.id) || {};
     const cls = classes.find(c=>c.id===s.classId);
     const timeEntry = sn.vehicle ? VEHICLE_SCHEDULE.find(v=>v.vehicle===sn.vehicle) : null;
-    const chk = v => (v===2 ? 'O' : '');
+    const chk = v => ((v||0) >= 1 ? 'O' : '');
     rows.push([
       s.studentId || '',
       s.name || '',
