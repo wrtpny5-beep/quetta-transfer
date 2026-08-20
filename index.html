@@ -197,7 +197,64 @@ th:hover .sort-ind{opacity:1}
 .empty p{font-size:15px}
 .tbl-actions{display:flex;gap:6px;justify-content:flex-end}
 
-@media(max-width:700px){.sidebar{display:none}.main{padding:16px}}
+@media(max-width:700px){
+  .sidebar{display:none}
+  .main{padding:12px}
+  .pg-head{flex-direction:column;align-items:flex-start;gap:10px}
+  .pg-actions{width:100%;flex-wrap:wrap}
+  .pg-actions .btn{flex:1;min-width:120px;font-size:13px}
+  .pg-title{font-size:18px}
+  .pg-sub{font-size:12px}
+  .tool-bar{flex-wrap:wrap;gap:8px}
+  .search-input{flex:1;min-width:180px;font-size:14px}
+  .card{padding:12px}
+  .tbl{font-size:12px}
+  .tbl th,.tbl td{padding:6px 8px}
+  .tbl-wrap{max-height:calc(100vh - 180px)}
+  .btn{padding:8px 12px;font-size:13px}
+  .btn-sm{padding:5px 8px;font-size:11px}
+  .modal{width:95vw;max-width:none;max-height:90vh}
+  .doc-toggle{width:28px;height:28px;font-size:11px}
+}
+
+/* 좌측 3컬럼 (학번/성명/성별) 스티키 고정 */
+.tbl.sticky-3 th:nth-child(1),.tbl.sticky-3 td:nth-child(1){position:sticky;left:0;background:var(--white);z-index:2;min-width:72px}
+.tbl.sticky-3 th:nth-child(1){z-index:3;background:var(--cream)}
+.tbl.sticky-3 th:nth-child(2),.tbl.sticky-3 td:nth-child(2){position:sticky;left:72px;background:var(--white);z-index:2;min-width:96px}
+.tbl.sticky-3 th:nth-child(2){z-index:3;background:var(--cream)}
+.tbl.sticky-3 th:nth-child(3),.tbl.sticky-3 td:nth-child(3){position:sticky;left:168px;background:var(--white);z-index:2;min-width:52px;border-right:2px solid var(--warm2)}
+.tbl.sticky-3 th:nth-child(3){z-index:3;background:var(--cream)}
+/* 반 열이 있는 스티키-4 (관리자 뷰) */
+.tbl.sticky-4 th:nth-child(1),.tbl.sticky-4 td:nth-child(1){position:sticky;left:0;background:var(--white);z-index:2;min-width:72px}
+.tbl.sticky-4 th:nth-child(1){z-index:3;background:var(--cream)}
+.tbl.sticky-4 th:nth-child(2),.tbl.sticky-4 td:nth-child(2){position:sticky;left:72px;background:var(--white);z-index:2;min-width:96px}
+.tbl.sticky-4 th:nth-child(2){z-index:3;background:var(--cream)}
+.tbl.sticky-4 th:nth-child(3),.tbl.sticky-4 td:nth-child(3){position:sticky;left:168px;background:var(--white);z-index:2;min-width:52px}
+.tbl.sticky-4 th:nth-child(3){z-index:3;background:var(--cream)}
+.tbl.sticky-4 th:nth-child(4),.tbl.sticky-4 td:nth-child(4){position:sticky;left:220px;background:var(--white);z-index:2;min-width:64px;border-right:2px solid var(--warm2)}
+.tbl.sticky-4 th:nth-child(4){z-index:3;background:var(--cream)}
+
+/* 인쇄 스타일 */
+@media print{
+  @page{size:A4 landscape;margin:1cm}
+  body,html{background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sidebar,.tool-bar,.pg-actions,.overlay,.modal{display:none !important}
+  button,.btn{display:none !important}
+  .main{padding:0 !important;max-width:none !important;margin:0 !important}
+  .app-wrap{display:block !important}
+  .card{box-shadow:none !important;border:1px solid #ddd !important;page-break-inside:avoid;margin-bottom:8px !important}
+  .card-head{border-bottom:1px solid #ccc}
+  .tbl-wrap{overflow:visible !important;max-height:none !important}
+  .tbl th{background:#f0f0f0 !important;color:#333 !important;position:static !important}
+  .tbl.sticky-3 th,.tbl.sticky-3 td,.tbl.sticky-4 th,.tbl.sticky-4 td{position:static !important;left:auto !important;background:transparent !important;border-right:0 !important}
+  .doc-toggle{background:transparent !important;border:1px solid #333 !important;color:#000 !important;font-size:11px}
+  .notes-input,select,input[type="text"]{border:none !important;background:transparent !important;padding:0 !important;font-size:11px !important;-webkit-appearance:none !important;appearance:none !important}
+  .bdg{border:1px solid #999 !important;background:transparent !important;color:#333 !important}
+  .sort-ind{display:none !important}
+  .chip{border:1px solid #999 !important;background:transparent !important}
+  .pg-title{font-size:16px}
+  .pg-sub{font-size:10px;color:#666}
+}
 </style>
 </head>
 <body>
@@ -304,7 +361,7 @@ th:hover .sort-ind{opacity:1}
         </div>
         <div class="card">
           <div class="tbl-wrap">
-            <table class="tbl" id="stuTable">
+            <table class="tbl sticky-3" id="stuTable">
               <thead>
                 <tr>
                   <th onclick="setSortCol('studentId')" style="cursor:pointer;user-select:none">학번 <span id="sh-studentId"></span></th>
@@ -336,7 +393,7 @@ th:hover .sort-ind{opacity:1}
         </div>
         <div class="card">
           <div class="tbl-wrap">
-            <table class="tbl" id="snTable">
+            <table class="tbl sticky-4" id="snTable">
               <thead>
                 <tr>
                   <th onclick="snSort('studentId')" style="cursor:pointer">학번<span class="sort-ind" data-col="studentId"></span></th>
@@ -372,7 +429,7 @@ th:hover .sort-ind{opacity:1}
         </div>
         <div class="card">
           <div class="tbl-wrap">
-            <table class="tbl" id="mySnTable">
+            <table class="tbl sticky-3" id="mySnTable">
               <thead>
                 <tr>
                   <th onclick="mySnSort('studentId')" style="cursor:pointer">학번<span class="sort-ind" data-mycol="studentId"></span></th>
@@ -534,7 +591,7 @@ th:hover .sort-ind{opacity:1}
             <input class="search-input" id="myStuSearch" placeholder="이름 또는 학번" oninput="renderMyStudents()">
           </div>
           <div class="tbl-wrap">
-            <table class="tbl">
+            <table class="tbl sticky-3">
               <thead><tr>
                 <th onclick="setSortCol('studentId')" style="cursor:pointer;user-select:none">학번 <span id="msh-studentId"></span></th>
                 <th onclick="setSortCol('name')" style="cursor:pointer;user-select:none">성명 <span id="msh-name"></span></th>
@@ -1096,7 +1153,9 @@ function buildNav() {
       <div class="nav-sec">관리</div>
       <div class="nav-item" onclick="switchTab('vImport',this)">데이터 import</div>
       <div class="nav-item" onclick="switchTab('vClasses',this)">반 관리</div>
-      <div class="nav-item" onclick="switchTab('vDocsAdmin',this)">서류 관리</div>`;
+      <div class="nav-item" onclick="switchTab('vDocsAdmin',this)">서류 관리</div>
+      <div class="nav-sec" style="margin-top:auto">유틸</div>
+      <div class="nav-item" onclick="window.print()">🖨️ 현재 화면 인쇄</div>`;
   } else {
     nav.innerHTML = `
       <div class="nav-sec">내 반</div>
@@ -1104,7 +1163,9 @@ function buildNav() {
       <div class="nav-item" onclick="switchTab('vMySuneung',this)">수능 원서접수</div>
       <div class="nav-item" onclick="switchTab('vAllSchedule',this)">전입신고 스케줄</div>
       <div class="nav-item" onclick="switchTab('vVehicleSchedule',this)">수능 원서접수 차량 스케줄</div>
-      <div class="nav-item" onclick="switchTab('vDocs',this)">전입신고 서류</div>`;
+      <div class="nav-item" onclick="switchTab('vDocs',this)">전입신고 서류</div>
+      <div class="nav-sec" style="margin-top:auto">유틸</div>
+      <div class="nav-item" onclick="window.print()">🖨️ 현재 화면 인쇄</div>`;
   }
 }
 
@@ -1502,11 +1563,20 @@ const VEHICLE_SCHEDULE = [
 
 // 차량 스케줄 렌더링 (읽기 전용, 실제 배정 인원도 함께 표시)
 function renderVehicleSchedule() {
-  // 실제 배정된 인원 수 집계 (퇴소생 제외)
+  // 담임이면 본인 반 학생만 집계
+  const isTeacher = meDoc?.role === 'teacher';
+  const myClassIds = isTeacher ? (meDoc.classIds || (meDoc.classId ? [meDoc.classId] : [])) : null;
+  const scopeStudents = isTeacher
+    ? students.filter(s => myClassIds.includes(s.classId))
+    : students;
+  const scopeStudentIds = new Set(scopeStudents.map(s => s.id));
+
+  // 실제 배정된 인원 수 집계 (퇴소생 제외 + 담임이면 본인 반만)
   const assignedCount = {};
   VEHICLES.forEach(v => assignedCount[v] = 0);
   suneungRecords.forEach(sn => {
     if (!sn.vehicle) return;
+    if (!scopeStudentIds.has(sn.id)) return;  // 담임 스코프 밖이면 스킵
     const r = records.find(r=>r.id===sn.id);
     if (r?.withdrawn) return;
     if (assignedCount[sn.vehicle] !== undefined) assignedCount[sn.vehicle]++;
@@ -1521,9 +1591,25 @@ function renderVehicleSchedule() {
 
   const totalCap = VEHICLE_SCHEDULE.reduce((s,v)=>s+v.capacity, 0);
   const totalAssigned = Object.values(assignedCount).reduce((s,c)=>s+c, 0);
+  const scopeLabel = isTeacher ? '본인 반 배정 현황' : '전체 배정 현황';
 
-  let html = `<div class="card" style="padding:16px 20px;margin-bottom:16px;background:var(--warm1);display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:15px;font-weight:700;color:var(--g900)">전체 배정 현황</div>
+  let html = '';
+  if (isTeacher) {
+    // 본인 반 학생 통계 카드
+    const myTotal = scopeStudents.filter(s => !records.find(r=>r.id===s.id)?.withdrawn).length;
+    const myAssigned = suneungRecords.filter(sn => sn.vehicle && scopeStudentIds.has(sn.id) && !records.find(r=>r.id===sn.id)?.withdrawn).length;
+    const myUnassigned = myTotal - myAssigned;
+    html += `<div class="card" style="padding:16px 20px;margin-bottom:12px;background:var(--warm1)">
+      <div style="font-size:14px;color:var(--t2);margin-bottom:8px">본인 반 학생 통계</div>
+      <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div><span style="color:var(--t3);font-size:13px">전체 재원생</span> <strong style="font-size:18px;color:var(--g900);margin-left:6px">${myTotal}명</strong></div>
+        <div><span style="color:var(--t3);font-size:13px">차량 배정</span> <strong style="font-size:18px;color:var(--g700);margin-left:6px">${myAssigned}명</strong></div>
+        <div><span style="color:var(--t3);font-size:13px">미배정</span> <strong style="font-size:18px;color:#E74C3C;margin-left:6px">${myUnassigned}명</strong></div>
+      </div>
+    </div>`;
+  }
+  html += `<div class="card" style="padding:16px 20px;margin-bottom:16px;background:var(--warm1);display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:15px;font-weight:700;color:var(--g900)">${scopeLabel}</div>
     <div><strong style="font-size:20px;color:var(--g900)">${totalAssigned}명</strong> <span style="font-size:14px;color:var(--t3)">/ ${totalCap}명 정원</span></div>
   </div>`;
 
@@ -1533,15 +1619,14 @@ function renderVehicleSchedule() {
     html += `<div style="margin-top:20px">
       <div style="font-size:15px;font-weight:700;color:var(--g900);margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
         <span>${date}</span>
-        <span style="font-size:13px;font-weight:500;color:var(--t3)">${dateAssigned}명 / ${dateCap}명</span>
+        <span style="font-size:13px;font-weight:500;color:var(--t3)">${dateAssigned}명${isTeacher?' (본인 반)':''} / ${dateCap}명${isTeacher?' 전체 정원':''}</span>
       </div>
       <div class="card"><div class="tbl-wrap"><table class="tbl">
         <thead><tr>
           <th>교시</th><th>출발시간</th><th>차량</th>
-          <th class="center">배정</th><th class="center">정원</th><th class="center">여유</th>
+          <th class="center">${isTeacher?'본인 반':'배정'}</th><th class="center">정원</th>${isTeacher?'':'<th class="center">여유</th>'}
         </tr></thead>
         <tbody>`;
-    // 교시별로 그룹 (같은 교시 첫 행에만 교시 표시)
     let prevPeriod = '';
     list.forEach(v => {
       const cnt = assignedCount[v.vehicle] || 0;
@@ -1551,12 +1636,13 @@ function renderVehicleSchedule() {
         ? `<td><strong>${v.period}</strong></td><td><span class="bdg bdg-gold">${v.time}</span></td>`
         : `<td></td><td></td>`;
       prevPeriod = v.period;
+      const cntStyle = isTeacher ? (cnt>0 ? 'color:var(--g900)' : 'color:var(--t3)') : 'color:var(--g900)';
       html += `<tr>
         ${periodCell}
         <td>${v.vehicle}</td>
-        <td class="center"><strong style="color:var(--g900)">${cnt}명</strong></td>
+        <td class="center"><strong style="${cntStyle}">${cnt}명</strong></td>
         <td class="center">${v.capacity}명</td>
-        <td class="center" style="${remainingStyle}"><strong>${remaining >= 0 ? '+' : ''}${remaining}명</strong></td>
+        ${isTeacher ? '' : `<td class="center" style="${remainingStyle}"><strong>${remaining >= 0 ? '+' : ''}${remaining}명</strong></td>`}
       </tr>`;
     });
     html += `</tbody></table></div></div></div>`;
@@ -1691,7 +1777,7 @@ function suneungRow(s, isTeacher=false) {
   const vehicleOptions = `<option value="">미배정</option>` +
     VEHICLES.map(v => `<option value="${v}" ${v===curVehicle?'selected':''}>${v}</option>`).join('');
   const vehicleSelect = `<select onchange="updateSnVehicle('${s.id}',this.value)"
-    style="width:100%;min-width:130px;padding:5px 6px;border:1.5px solid var(--warm2);border-radius:6px;font-size:11px;font-family:'Noto Sans KR',sans-serif;background:#fff">${vehicleOptions}</select>`;
+    style="width:100%;min-width:140px;padding:5px 6px;border:1.5px solid var(--warm2);border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;background:#fff">${vehicleOptions}</select>`;
   const timeEntry = curVehicle ? VEHICLE_SCHEDULE.find(v => v.vehicle === curVehicle) : null;
   const timeCell = timeEntry ? `<span class="bdg bdg-gold">${timeEntry.time}</span>` : '<span style="color:var(--t3)">−</span>';
   const withdrawBtn = `<button class="btn ${isOut?'btn-red':'btn-ghost'} btn-sm" onclick="toggleWithdrawn('${s.id}',${!isOut})">${isOut?'취소':'퇴소'}</button>`;
@@ -1811,7 +1897,7 @@ function getSortValue(s, col) {
     case 'snIdCard':
     case 'qualDoc':
     case 'offlineDocs': return (sn[col] || 0) >= 1 ? 1 : 0;
-    case 'vehicle': return sn.vehicle || '';
+    case 'vehicle': return sn.vehicle || '\uFFFF';  // 미배정은 마지막으로 정렬
     case 'time': {
       const v = sn.vehicle; if (!v) return '';
       const e = VEHICLE_SCHEDULE.find(x => x.vehicle === v);
@@ -1836,26 +1922,47 @@ function updateSortIndicators(tableId, sortCol, asc, attr='col') {
   });
 }
 
-// 수능 원서접수 엑셀 내보내기 (전체 데이터, 필터 무시)
+// 수능 원서접수 엑셀 내보내기 (현재 화면의 필터/정렬 상태 그대로)
 window.exportSuneungExcel = () => {
-  const rows = [['학번','성명','성별','반','전입여부','온라인','초본','신분증','학력증빙서류','온라인X','차량','출발시간','비고','퇴소']];
-  const list = students.slice().sort((a,b) => {
-    const ca = classes.find(c=>c.id===a.classId)?.name || '';
-    const cb = classes.find(c=>c.id===b.classId)?.name || '';
-    if (ca !== cb) return ca.localeCompare(cb);
-    return (a.name||'').localeCompare(b.name||'');
-  });
+  const activeId = document.querySelector('.view.active')?.id;
+  const isTeacherView = activeId === 'vMySuneung';
+  let list = students.slice();
+  // 담임 뷰: 자기 반만
+  if (isTeacherView) {
+    const myClassIds = meDoc.classIds || (meDoc.classId ? [meDoc.classId] : []);
+    list = list.filter(s => myClassIds.includes(s.classId));
+  } else {
+    // 관리자: 반 필터 적용
+    if (activeClsFilter) list = list.filter(s => s.classId === activeClsFilter);
+  }
+  // 퇴소생 제외 (화면과 동일)
+  list = list.filter(s => !records.find(r=>r.id===s.id)?.withdrawn);
+  // 검색어 적용
+  const searchId = isTeacherView ? 'mySnSearch' : 'snSearch';
+  const q = ($(searchId)?.value || '').trim().toLowerCase();
+  if (q) list = list.filter(s=>(s.name||'').toLowerCase().includes(q) || (s.studentId||'').toLowerCase().includes(q));
+  // 현재 정렬 상태 적용
+  const sortCol = isTeacherView ? mySnSortCol : snSortCol;
+  const sortAsc = isTeacherView ? mySnSortAsc : snSortAsc;
+  sortSuneungList(list, sortCol, sortAsc);
+
+  const headers = isTeacherView
+    ? ['학번','성명','성별','전입여부','온라인','초본','신분증','학력증빙서류','온라인X','차량','출발시간','비고','퇴소']
+    : ['학번','성명','성별','반','전입여부','온라인','초본','신분증','학력증빙서류','온라인X','차량','출발시간','비고','퇴소'];
+  const rows = [headers];
   list.forEach(s => {
     const r = records.find(r=>r.id===s.id) || {};
     const sn = suneungRecords.find(x=>x.id===s.id) || {};
     const cls = classes.find(c=>c.id===s.classId);
     const timeEntry = sn.vehicle ? VEHICLE_SCHEDULE.find(v=>v.vehicle===sn.vehicle) : null;
     const chk = v => ((v||0) >= 1 ? 'O' : '');
-    rows.push([
+    const rowData = [
       s.studentId || '',
       s.name || '',
       s.gender || '',
-      cls ? cls.name : '',
+    ];
+    if (!isTeacherView) rowData.push(cls ? cls.name : '');
+    rowData.push(
       isTransferComplete(s.id) ? 'O' : '',
       chk(sn.online),
       chk(sn.charter),
@@ -1866,19 +1973,19 @@ window.exportSuneungExcel = () => {
       timeEntry ? timeEntry.time : '',
       sn.notes || '',
       r.withdrawn ? 'O' : ''
-    ]);
+    );
+    rows.push(rowData);
   });
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  // 컬럼 너비 자동 조정
-  ws['!cols'] = [
-    {wch:8},{wch:10},{wch:6},{wch:8},{wch:8},{wch:8},{wch:6},{wch:8},{wch:12},{wch:8},{wch:28},{wch:10},{wch:20},{wch:6}
-  ];
+  ws['!cols'] = isTeacherView
+    ? [{wch:8},{wch:10},{wch:6},{wch:8},{wch:8},{wch:6},{wch:8},{wch:12},{wch:8},{wch:28},{wch:10},{wch:20},{wch:6}]
+    : [{wch:8},{wch:10},{wch:6},{wch:8},{wch:8},{wch:8},{wch:6},{wch:8},{wch:12},{wch:8},{wch:28},{wch:10},{wch:20},{wch:6}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '수능원서접수');
   const today = new Date();
   const fname = `QUETTA_수능원서접수_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
   XLSX.writeFile(wb, fname);
-  toast('엑셀 파일이 다운로드되었습니다.');
+  toast(`엑셀 파일 다운로드 (${list.length}건)`);
 };
 
 // 담임용 스케줄 (전체 스케줄, 날짜별 표만)
