@@ -250,24 +250,40 @@ th:hover .sort-ind{opacity:1}
 
 /* 인쇄 스타일 */
 @media print{
-  @page{size:A4 portrait;margin:1cm}
-  body,html{background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .sidebar,.tool-bar,.pg-actions,.overlay,.modal{display:none !important}
+  @page{size:A4 portrait;margin:0.6cm}
+  html,body{background:#fff !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;min-height:0 !important;height:auto !important}
+  .layout{min-height:0 !important;display:block !important}
+  .sidebar,.tool-bar,.pg-actions,.overlay,.modal,.mobile-menu-btn,.mobile-menu-overlay{display:none !important}
   button,.btn{display:none !important}
-  .main{padding:0 !important;max-width:none !important;margin:0 !important}
-  .app-wrap{display:block !important}
-  .card{box-shadow:none !important;border:1px solid #ddd !important;page-break-inside:avoid;margin-bottom:8px !important}
-  .card-head{border-bottom:1px solid #ccc}
-  .tbl-wrap{overflow:visible !important;max-height:none !important}
-  .tbl th{background:#f0f0f0 !important;color:#333 !important;position:static !important}
-  .tbl.sticky-3 th,.tbl.sticky-3 td,.tbl.sticky-4 th,.tbl.sticky-4 td{position:static !important;left:auto !important;background:transparent !important;border-right:0 !important}
-  .doc-toggle{background:transparent !important;border:1px solid #333 !important;color:#000 !important;font-size:11px}
-  .notes-input,select,input[type="text"]{border:none !important;background:transparent !important;padding:0 !important;font-size:11px !important;-webkit-appearance:none !important;appearance:none !important}
-  .bdg{border:1px solid #999 !important;background:transparent !important;color:#333 !important}
+  .main{padding:0 !important;max-width:none !important;margin:0 !important;overflow:visible !important;flex:none !important;min-height:0 !important;height:auto !important}
+  .view{display:none}
+  .view.active{display:block !important;padding:0 !important;margin:0 !important}
+  /* 헤더 컴팩트 - 한줄로 */
+  .pg-head{flex-direction:row !important;align-items:baseline !important;gap:8px !important;margin:0 0 6px 0 !important;padding:0 !important;page-break-after:avoid !important;page-break-inside:avoid !important}
+  .pg-title{font-size:12pt !important;margin:0 !important;padding:0 !important;line-height:1.1 !important}
+  .pg-sub{font-size:8pt !important;color:#666 !important;margin:0 !important}
+  /* 카드는 페이지 넘김 허용 */
+  .card{box-shadow:none !important;border:1px solid #ccc !important;margin:0 !important;padding:0 !important;page-break-inside:auto !important;page-break-before:avoid !important;overflow:visible !important}
+  .card-head{padding:4px 6px !important;font-size:9pt !important}
+  .card-body{padding:0 !important}
+  /* 테이블 - A4 세로 폭에 맞게 아주 컴팩트 */
+  .tbl-wrap{overflow:visible !important;max-height:none !important;padding:0 !important;margin:0 !important}
+  .tbl{font-size:7.5pt !important;width:100% !important;table-layout:auto !important;border-collapse:collapse !important}
+  .tbl th{background:#eee !important;color:#333 !important;position:static !important;padding:3px 4px !important;font-size:7pt !important;font-weight:600 !important;text-transform:none !important;letter-spacing:0 !important;border:1px solid #ccc !important;white-space:nowrap !important}
+  .tbl td{padding:2px 4px !important;border:1px solid #ddd !important;word-break:break-all !important;vertical-align:middle !important}
+  .tbl tr{page-break-inside:avoid !important}
+  /* thead가 페이지마다 반복 */
+  .tbl thead{display:table-header-group !important}
+  /* 스티키 컬럼 인쇄 시 해제 */
+  .tbl.sticky-3 th,.tbl.sticky-3 td,.tbl.sticky-4 th,.tbl.sticky-4 td{position:static !important;left:auto !important;background:transparent !important;border-right:1px solid #ddd !important;min-width:0 !important;max-width:none !important}
+  .tbl.sticky-3 th,.tbl.sticky-4 th{background:#eee !important}
+  /* 셀 안 요소 컴팩트 */
+  .doc-toggle{background:transparent !important;border:1px solid #666 !important;color:#000 !important;width:auto !important;height:auto !important;min-width:16px !important;padding:0 2px !important;font-size:7pt !important;font-weight:600 !important;line-height:1.2 !important;display:inline-block !important}
+  .notes-input,select,input[type="text"]{border:none !important;background:transparent !important;padding:0 !important;font-size:7pt !important;-webkit-appearance:none !important;appearance:none !important;width:auto !important;min-width:0 !important;max-width:100% !important}
+  select{white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+  .bdg{border:1px solid #999 !important;background:transparent !important;color:#333 !important;padding:0 3px !important;font-size:7pt !important;display:inline-block !important}
   .sort-ind{display:none !important}
-  .chip{border:1px solid #999 !important;background:transparent !important}
-  .pg-title{font-size:16px}
-  .pg-sub{font-size:10px;color:#666}
+  .chip{display:none !important}
 }
 </style>
 </head>
