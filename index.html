@@ -794,6 +794,26 @@ th:hover .sort-ind{opacity:1}
                 <button class="btn btn-ghost" onclick="certReset()">초기화</button>
               </div>
               <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-size:13px;color:var(--t2)">✉️ 이메일 발송 설정 (관리자)</summary>
+                <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px;display:grid;gap:10px">
+                  <div style="font-size:12px;color:var(--t3)">
+                    그룹웨어 메일쓰기 창을 새 탭으로 열고, 받는사람/제목/본문을 복사 붙여넣는 방식입니다.<br>
+                    학번-이메일 매칭은 공유된 구글 시트에서 자동 조회합니다.
+                  </div>
+                  <div class="fg" style="margin:0"><label>그룹웨어 메일쓰기 URL</label><input type="text" id="ejsMailUrl" placeholder="https://gware.dshw.co.kr/mail/mail.do"></div>
+                  <div class="fg" style="margin:0"><label>구글 시트 URL 또는 ID</label><input type="text" id="ejsSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    <div class="fg" style="margin:0"><label>학번 컬럼명</label><input type="text" id="ejsIdCol" placeholder="예: 학번"></div>
+                    <div class="fg" style="margin:0"><label>이메일 컬럼명</label><input type="text" id="ejsEmailCol" placeholder="예: 이메일 주소"></div>
+                  </div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <button class="btn btn-gold btn-sm" onclick="saveEmailConfig()">💾 저장</button>
+                    <button class="btn btn-ghost btn-sm" onclick="testSheetLookup()">🔍 시트 조회 테스트</button>
+                  </div>
+                  <div id="emailConfigStatus" style="font-size:12px;color:var(--t3)"></div>
+                </div>
+              </details>
+              <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-size:13px;color:var(--t2)">🚌 일괄 발급 (여러 학번)</summary>
                 <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px">
                   <div class="fg">
@@ -828,6 +848,7 @@ th:hover .sort-ind{opacity:1}
                 <thead><tr>
                   <th>증명서 번호</th><th>발급일</th><th>종류</th>
                   <th>학번</th><th>성명</th><th>과정</th><th>용도</th><th>발급자</th>
+                  <th class="center">이메일</th>
                 </tr></thead>
                 <tbody id="certHistoryBody"></tbody>
               </table>
@@ -844,6 +865,54 @@ th:hover .sort-ind{opacity:1}
 </div>
 
 <!-- MODAL: 학생 추가/수정 -->
+<!-- MODAL: 이메일 발송 (반자동 - 그룹웨어 창 + 복사 붙여넣기) -->
+<div class="overlay" id="emailSendOverlay">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <div class="modal-head-title">📧 이메일 발송 (그룹웨어)</div>
+      <button class="modal-x" onclick="closeOverlay('emailSendOverlay')">×</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <input type="hidden" id="emailSendCertId">
+      <div style="padding:10px 12px;background:var(--warm1);border-radius:6px;font-size:13px;margin-bottom:12px">
+        <strong>진행 순서</strong>: ① PDF 다운로드 → ② 그룹웨어 열기 → ③ 각 항목 복사·붙여넣기 + PDF 첨부 → ④ 그룹웨어에서 발송 → ⑤ 발송 완료 기록
+      </div>
+      <div class="fg"><label>증명서</label><div id="emailSendCertInfo" style="padding:8px 10px;background:var(--warm1);border-radius:6px;font-size:14px"></div></div>
+      <div class="fg"><label>학생</label><div id="emailSendStudentInfo" style="padding:8px 10px;background:var(--warm1);border-radius:6px;font-size:14px"></div></div>
+
+      <div class="fg">
+        <label>받는사람 <span id="emailSendSource" style="font-size:12px;color:var(--t3);font-weight:400"></span></label>
+        <div style="display:flex;gap:6px">
+          <input type="email" id="emailSendTo" placeholder="user@example.com" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="copyEmailField('emailSendTo')">📋 복사</button>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>제목</label>
+        <div style="display:flex;gap:6px">
+          <input type="text" id="emailSendSubject" style="flex:1">
+          <button class="btn btn-ghost btn-sm" onclick="copyEmailField('emailSendSubject')">📋 복사</button>
+        </div>
+      </div>
+
+      <div class="fg">
+        <label>본문</label>
+        <textarea id="emailSendBody" rows="10" style="width:100%;padding:8px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:13px;resize:vertical"></textarea>
+        <button class="btn btn-ghost btn-sm" onclick="copyEmailField('emailSendBody')" style="margin-top:6px">📋 본문 복사</button>
+      </div>
+
+      <div id="emailSendStatus" style="font-size:13px;color:var(--t3);margin-top:8px"></div>
+    </div>
+    <div class="modal-foot" style="flex-wrap:wrap;gap:6px">
+      <button class="btn btn-ghost" onclick="closeOverlay('emailSendOverlay')">닫기</button>
+      <button class="btn btn-ghost" onclick="downloadCertPdfForEmail()">📥 PDF 다운로드</button>
+      <button class="btn btn-gold" onclick="openGroupwareMail()">📧 그룹웨어 열기</button>
+      <button class="btn btn-gold" onclick="markEmailSent()">✅ 발송 완료 기록</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: 차량 배정 학생 명단 -->
 <div class="overlay" id="snListOverlay">
   <div class="modal" style="max-width:520px">
@@ -3325,6 +3394,8 @@ function renderCert() {
     if (saved) $('certIssuer').value = saved;
     else if (meDoc?.name) $('certIssuer').value = meDoc.name;
   }
+  // 이메일 설정 로드
+  loadEmailConfig();
   certSwitchTab(certTab);
 }
 
@@ -3610,12 +3681,24 @@ function renderCertHistory() {
     (c.studentId||'').toLowerCase().includes(q) ||
     (c.studentName||'').toLowerCase().includes(q));
   if (!list.length) {
-    $('certHistoryBody').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:30px">발급 이력이 없습니다.</td></tr>`;
+    $('certHistoryBody').innerHTML = `<tr><td colspan="9" style="text-align:center;color:var(--t3);padding:30px">발급 이력이 없습니다.</td></tr>`;
     return;
   }
   $('certHistoryBody').innerHTML = list.map(c => {
     const at = c.issuedAt?.toDate ? c.issuedAt.toDate() : (c.issuedAt || new Date());
     const dateStr = at instanceof Date ? at.toLocaleDateString('ko') : '';
+    // 이메일 발송 상태
+    let emailCell;
+    if (c.emailSentAt) {
+      const sentAt = c.emailSentAt?.toDate ? c.emailSentAt.toDate() : c.emailSentAt;
+      const sentStr = sentAt ? new Date(sentAt).toLocaleString('ko',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
+      emailCell = `<div style="display:flex;flex-direction:column;gap:2px;align-items:center">
+        <span class="bdg bdg-gold" style="font-size:11px">${sentStr}</span>
+        <button class="btn btn-ghost btn-sm" onclick="openEmailSend('${c.id}')" style="font-size:11px">재발송</button>
+      </div>`;
+    } else {
+      emailCell = `<button class="btn btn-gold btn-sm" onclick="openEmailSend('${c.id}')" style="font-size:11px">✉ 발송</button>`;
+    }
     return `<tr>
       <td><strong>${c.number||''}</strong></td>
       <td>${dateStr}</td>
@@ -3625,6 +3708,7 @@ function renderCertHistory() {
       <td style="font-size:12px">${c.course||''}</td>
       <td>${c.purpose||''}</td>
       <td>${c.issuer||''}</td>
+      <td class="center">${emailCell}</td>
     </tr>`;
   }).join('');
 }
@@ -3637,20 +3721,23 @@ window.exportCertHistory = () => {
     (c.number||'').toLowerCase().includes(q) ||
     (c.studentId||'').toLowerCase().includes(q) ||
     (c.studentName||'').toLowerCase().includes(q));
-  const rows = [['증명서번호','발급일','종류','학번','성명','반','생년월일','과정','수업기간','용도','발급자']];
+  const rows = [['증명서번호','발급일','종류','학번','성명','반','생년월일','과정','수업기간','용도','발급자','발송이메일','발송시각']];
   list.forEach(c => {
     const at = c.issuedAt?.toDate ? c.issuedAt.toDate() : c.issuedAt;
     const dateStr = at ? new Date(at).toLocaleDateString('ko') : '';
+    const sentAt = c.emailSentAt?.toDate ? c.emailSentAt.toDate() : c.emailSentAt;
+    const sentStr = sentAt ? new Date(sentAt).toLocaleString('ko') : '';
     rows.push([
       c.number||'', dateStr, c.type||'',
       c.studentId||'', c.studentName||'', c.className||'',
       c.birthday||'', c.course||'',
       (c.periodStart && c.periodEnd) ? `${c.periodStart} ~ ${c.periodEnd}` : '',
-      c.purpose||'', c.issuer||''
+      c.purpose||'', c.issuer||'',
+      c.emailTo||'', sentStr
     ]);
   });
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:14},{wch:12},{wch:12},{wch:8},{wch:10},{wch:8},{wch:12},{wch:20},{wch:24},{wch:20},{wch:10}];
+  ws['!cols'] = [{wch:14},{wch:12},{wch:12},{wch:8},{wch:10},{wch:8},{wch:12},{wch:20},{wch:24},{wch:20},{wch:10},{wch:24},{wch:16}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '증명서 이력');
   const today = new Date();
@@ -3687,6 +3774,243 @@ window.__importBirthdays = async (mappings) => {
   if (notFound.length) console.table(notFound);
   if (errors.length) console.table(errors);
   return { ok, notFound: notFound.length, errors: errors.length };
+};
+
+// ============================================================
+// 이메일 발송 (그룹웨어 반자동 - 복사·붙여넣기 방식)
+// ============================================================
+
+let emailConfig = null; // { mailUrl, sheetUrl, idColumn, emailColumn }
+let sheetEmailCache = null; // { studentId: email } 캐시
+
+// 설정 로드 (renderCert에서 호출)
+async function loadEmailConfig() {
+  try {
+    const snap = await getDoc(doc(db, 'certConfig', 'emailConfig'));
+    emailConfig = snap.exists() ? snap.data() : null;
+    if (emailConfig) {
+      $('ejsMailUrl').value = emailConfig.mailUrl || '';
+      $('ejsSheetUrl').value = emailConfig.sheetUrl || '';
+      $('ejsIdCol').value = emailConfig.idColumn || '';
+      $('ejsEmailCol').value = emailConfig.emailColumn || '';
+      $('emailConfigStatus').innerHTML = '<span style="color:var(--g700)">✓ 설정 로드됨</span>';
+    }
+  } catch (e) {
+    console.warn('[emailConfig] load fail:', e.message);
+  }
+}
+
+window.saveEmailConfig = async () => {
+  const cfg = {
+    mailUrl: $('ejsMailUrl').value.trim(),
+    sheetUrl: $('ejsSheetUrl').value.trim(),
+    idColumn: $('ejsIdCol').value.trim(),
+    emailColumn: $('ejsEmailCol').value.trim(),
+    updatedAt: serverTimestamp(),
+  };
+  if (!cfg.mailUrl) return toast('그룹웨어 메일쓰기 URL은 필수입니다.', true);
+  try {
+    await setDoc(doc(db, 'certConfig', 'emailConfig'), cfg);
+    emailConfig = cfg;
+    sheetEmailCache = null;
+    $('emailConfigStatus').innerHTML = '<span style="color:var(--g700)">✓ 저장되었습니다</span>';
+    toast('이메일 설정이 저장되었습니다.');
+  } catch (e) {
+    toast('저장 실패: ' + e.message, true);
+  }
+};
+
+// 시트 URL에서 ID 추출
+function extractSheetId(input) {
+  if (!input) return null;
+  const m = input.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : input.trim();
+}
+
+// 구글 시트 CSV 조회
+async function loadSheetEmails() {
+  if (sheetEmailCache) return sheetEmailCache;
+  if (!emailConfig?.sheetUrl || !emailConfig?.idColumn || !emailConfig?.emailColumn) {
+    throw new Error('시트 URL과 컬럼명이 설정되지 않았습니다.');
+  }
+  const sheetId = extractSheetId(emailConfig.sheetUrl);
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`;
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`시트 조회 실패 (${resp.status}) — 공유 설정을 확인하세요`);
+  const text = await resp.text();
+  const rows = text.split('\n').map(l => {
+    const cells = [];
+    let cur = '', inQ = false;
+    for (const ch of l) {
+      if (ch === '"') inQ = !inQ;
+      else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    cells.push(cur.trim());
+    return cells.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"'));
+  });
+  if (!rows.length) throw new Error('빈 시트입니다.');
+  const header = rows[0];
+  const idIdx = header.findIndex(h => h === emailConfig.idColumn);
+  const emailIdx = header.findIndex(h => h === emailConfig.emailColumn);
+  if (idIdx < 0) throw new Error(`"${emailConfig.idColumn}" 컬럼을 찾을 수 없습니다.`);
+  if (emailIdx < 0) throw new Error(`"${emailConfig.emailColumn}" 컬럼을 찾을 수 없습니다.`);
+  const map = {};
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const id = (r[idIdx] || '').trim();
+    const email = (r[emailIdx] || '').trim();
+    if (id && email) map[id] = email;
+  }
+  sheetEmailCache = map;
+  return map;
+}
+
+window.testSheetLookup = async () => {
+  try {
+    $('emailConfigStatus').innerHTML = '<span style="color:var(--t2)">시트 조회 중...</span>';
+    sheetEmailCache = null;
+    const map = await loadSheetEmails();
+    const count = Object.keys(map).length;
+    $('emailConfigStatus').innerHTML = `<span style="color:var(--g700)">✓ 조회 성공 — ${count}건의 학번-이메일 매핑</span>`;
+    toast(`시트 조회 성공: ${count}건`);
+  } catch (e) {
+    $('emailConfigStatus').innerHTML = `<span style="color:#E74C3C">❌ ${e.message}</span>`;
+    toast('시트 조회 실패: ' + e.message, true);
+  }
+};
+
+// 이메일 제목·본문 템플릿 생성
+function buildEmailContent(cert) {
+  const at = cert.issuedAt?.toDate ? cert.issuedAt.toDate() : new Date();
+  const dateStr = `${at.getFullYear()}년 ${at.getMonth()+1}월 ${at.getDate()}일`;
+  const subject = `[강남대성기숙 QUETTA] ${cert.type} 발송 안내 (${cert.studentName})`;
+  const body = `안녕하세요, ${cert.studentName} 학생/학부모님.
+강남대성기숙 QUETTA 행정실입니다.
+
+요청하신 증명서를 발송드립니다. 첨부 PDF를 확인해 주시기 바랍니다.
+
+▪ 증명서 종류: ${cert.type}
+▪ 증명서 번호: ${cert.number}
+▪ 발급일: ${dateStr}
+▪ 용도: ${cert.purpose}
+
+문의사항이 있으시면 회신 주시기 바랍니다.
+감사합니다.
+
+Good Better Best
+강남대성기숙 QUETTA`;
+  return { subject, body };
+}
+
+// 발송 모달 열기
+window.openEmailSend = async (certId) => {
+  const cert = certificates.find(c => c.id === certId);
+  if (!cert) return toast('증명서를 찾을 수 없습니다.', true);
+  $('emailSendCertId').value = certId;
+  $('emailSendCertInfo').innerHTML = `<strong>${cert.number}</strong> · ${cert.type} · ${cert.issuedAt?.toDate ? cert.issuedAt.toDate().toLocaleDateString('ko') : ''}`;
+  $('emailSendStudentInfo').innerHTML = `<strong>${cert.studentName}</strong> · ${cert.studentId} · ${cert.className||''}반`;
+  const { subject, body } = buildEmailContent(cert);
+  $('emailSendSubject').value = subject;
+  $('emailSendBody').value = body;
+  $('emailSendTo').value = cert.emailTo || '';
+  $('emailSendSource').textContent = cert.emailTo ? '(이전 발송 이메일)' : '';
+  $('emailSendStatus').textContent = '';
+  openOverlay('emailSendOverlay');
+
+  // 시트에서 이메일 자동 조회 (설정돼있을 때만)
+  if (emailConfig?.sheetUrl && !cert.emailTo) {
+    try {
+      const map = await loadSheetEmails();
+      const email = map[cert.studentId];
+      if (email) {
+        $('emailSendTo').value = email;
+        $('emailSendSource').innerHTML = '<span style="color:var(--g700)">— 시트에서 자동 조회됨</span>';
+      } else {
+        $('emailSendSource').innerHTML = '<span style="color:#E74C3C">— 시트에 학번 없음</span>';
+      }
+    } catch (e) {
+      $('emailSendSource').innerHTML = '<span style="color:#E74C3C">— 시트 조회 실패</span>';
+      $('emailSendStatus').textContent = e.message;
+    }
+  }
+};
+
+// 필드 복사
+window.copyEmailField = async (fieldId) => {
+  const el = $(fieldId);
+  if (!el) return;
+  try {
+    await navigator.clipboard.writeText(el.value);
+    toast('복사되었습니다.');
+  } catch (e) {
+    // fallback
+    el.select();
+    document.execCommand('copy');
+    toast('복사되었습니다.');
+  }
+};
+
+// 그룹웨어 열기
+window.openGroupwareMail = () => {
+  const url = emailConfig?.mailUrl?.trim();
+  if (!url) return toast('그룹웨어 URL이 설정되지 않았습니다.', true);
+  window.open(url, '_blank');
+};
+
+// 이 증명서 PDF 다운로드 (발송 모달용, 이력 항목 기준으로 재생성)
+window.downloadCertPdfForEmail = async () => {
+  const certId = $('emailSendCertId').value;
+  const cert = certificates.find(c => c.id === certId);
+  if (!cert) return toast('증명서를 찾을 수 없습니다.', true);
+  $('emailSendStatus').innerHTML = '<span style="color:var(--t2)">PDF 생성 중...</span>';
+  try {
+    const at = cert.issuedAt?.toDate ? cert.issuedAt.toDate() : new Date();
+    const todayStr = `${at.getFullYear()}년 ${at.getMonth()+1}월 ${at.getDate()}일`;
+    const html = renderCertHTML({
+      number: cert.number, type: cert.type,
+      name: cert.studentName, studentId: cert.studentId,
+      birthday: cert.birthday || '', className: cert.className || '',
+      course: cert.course,
+      periodStart: cert.periodStart, periodEnd: cert.periodEnd,
+      purpose: cert.purpose, issuedDate: todayStr,
+      certText: CERT_TEXTS[cert.type],
+    });
+    $('certPdfContainer').innerHTML = html;
+    const canvas = await html2canvas($('certPdfContainer').firstElementChild, { scale: 2, backgroundColor: '#fff' });
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+    pdf.save(`${cert.studentId}_${cert.studentName}_${cert.type}_${cert.number}.pdf`);
+    $('certPdfContainer').innerHTML = '';
+    $('emailSendStatus').innerHTML = '<span style="color:var(--g700)">✓ PDF 다운로드 완료</span>';
+  } catch (e) {
+    console.error(e);
+    $('emailSendStatus').innerHTML = `<span style="color:#E74C3C">PDF 생성 실패: ${e.message}</span>`;
+  }
+};
+
+// 발송 완료 기록 (그룹웨어에서 발송 완료 후 사용자가 클릭)
+window.markEmailSent = async () => {
+  const certId = $('emailSendCertId').value;
+  const toEmail = $('emailSendTo').value.trim();
+  if (!toEmail || !toEmail.includes('@')) return toast('받는 이메일을 확인해주세요.', true);
+  const cert = certificates.find(c => c.id === certId);
+  if (!cert) return toast('증명서를 찾을 수 없습니다.', true);
+  try {
+    await updateDoc(doc(db, 'certificates', certId), {
+      emailSentAt: serverTimestamp(),
+      emailTo: toEmail,
+    });
+    cert.emailSentAt = new Date();
+    cert.emailTo = toEmail;
+    toast('발송 완료로 기록되었습니다.');
+    closeOverlay('emailSendOverlay');
+    if (certTab === 'history') renderCertHistory();
+  } catch (e) {
+    toast('기록 실패: ' + e.message, true);
+  }
 };
 
 </script>
