@@ -794,6 +794,29 @@ th:hover .sort-ind{opacity:1}
                 <button class="btn btn-ghost" onclick="certReset()">초기화</button>
               </div>
               <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-size:13px;color:var(--t2)">🖼️ 직인 이미지 관리</summary>
+                <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px">
+                  <div style="display:flex;gap:12px;align-items:flex-start">
+                    <div style="width:100px;height:100px;background:#fff;border:1px solid var(--warm2);border-radius:8px;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                      <img id="sealPreview" style="max-width:100%;max-height:100%;display:none" alt="직인">
+                      <span id="sealNone" style="font-size:11px;color:var(--t3)">직인<br>미등록</span>
+                    </div>
+                    <div style="flex:1">
+                      <div style="font-size:12px;color:var(--t3);margin-bottom:8px">
+                        PNG (배경 투명 권장), 정사각형 이미지 사용 시 가장 깔끔합니다.<br>
+                        업로드하면 모든 증명서에 자동으로 반영됩니다.
+                      </div>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap">
+                        <label class="btn btn-gold btn-sm" style="cursor:pointer">📤 업로드
+                          <input type="file" accept="image/png,image/jpeg" style="display:none" onchange="uploadSeal(this)">
+                        </label>
+                        <button class="btn btn-ghost btn-sm" onclick="deleteSeal()">🗑 제거</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </details>
+              <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-size:13px;color:var(--t2)">🚌 일괄 발급 (여러 학번)</summary>
                 <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px">
                   <div class="fg">
@@ -1074,12 +1097,15 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
          getDocs, getDoc, setDoc, query, orderBy, writeBatch, runTransaction, serverTimestamp, onSnapshot }
   from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL, deleteObject }
+  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
 
 const app  = initializeApp(FB);
 const app2 = initializeApp(FB, 'secondary');
 const auth = getAuth(app);
 const auth2= getAuth(app2);
 const db   = getFirestore(app);
+const storage = getStorage(app);
 
 // ── 상태 ──
 let me, meDoc;
@@ -3308,8 +3334,68 @@ const CERT_TEXTS = {
 
 // 발급자 이름 로컬 저장 (편의)
 const CERT_ISSUER_KEY = 'quetta_cert_issuer';
+const SEAL_PATH = 'cert/seal.png'; // Firebase Storage 경로
 
 let certTab = 'form'; // 'form' | 'history'
+let sealImageUrl = null; // Firebase Storage에서 로드된 직인 URL (없으면 null)
+
+// 직인 이미지 로드 (Storage에서 URL 가져오기, 없으면 null)
+async function loadSealImage() {
+  try {
+    sealImageUrl = await getDownloadURL(storageRef(storage, SEAL_PATH));
+    updateSealPreviewUI();
+    return sealImageUrl;
+  } catch(e) {
+    // 파일 없음 (object-not-found) — 정상 상태
+    sealImageUrl = null;
+    updateSealPreviewUI();
+    return null;
+  }
+}
+
+function updateSealPreviewUI() {
+  const img = $('sealPreview'), none = $('sealNone');
+  if (!img || !none) return;
+  if (sealImageUrl) {
+    img.src = sealImageUrl + '&_cb=' + Date.now(); // cache-bust
+    img.style.display = 'block';
+    none.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    none.style.display = '';
+  }
+}
+
+// 직인 업로드
+window.uploadSeal = async (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) return toast('파일이 2MB를 초과합니다.', true);
+  try {
+    await uploadBytes(storageRef(storage, SEAL_PATH), file, {contentType: file.type});
+    await loadSealImage();
+    certUpdatePreview();
+    toast('직인이 업로드되었습니다.');
+    input.value = '';
+  } catch (e) {
+    toast('업로드 실패: ' + e.message, true);
+  }
+};
+
+// 직인 제거
+window.deleteSeal = async () => {
+  if (!sealImageUrl) return toast('등록된 직인이 없습니다.', true);
+  if (!confirm('직인을 제거할까요? 모든 증명서에서 사라집니다.')) return;
+  try {
+    await deleteObject(storageRef(storage, SEAL_PATH));
+    sealImageUrl = null;
+    updateSealPreviewUI();
+    certUpdatePreview();
+    toast('직인이 제거되었습니다.');
+  } catch (e) {
+    toast('제거 실패: ' + e.message, true);
+  }
+};
 
 function renderCert() {
   // 과정 드롭다운 채우기 (한 번만)
@@ -3324,6 +3410,8 @@ function renderCert() {
     if (saved) $('certIssuer').value = saved;
     else if (meDoc?.name) $('certIssuer').value = meDoc.name;
   }
+  // 직인 이미지 로드 (비동기, 완료되면 미리보기 자동 갱신)
+  loadSealImage().then(() => certUpdatePreview());
   certSwitchTab(certTab);
 }
 
@@ -3441,7 +3529,11 @@ function renderCertHTML(d) {
     <div style="text-align:center;font-size:19px;margin:40px 0 20px;letter-spacing:2px">${d.issuedDate}</div>
     <div style="text-align:right;margin-top:40px;line-height:1.9">
       <div style="font-size:15px">경기도 이천시 마장면 서이천로337번길 55</div>
-      <div style="font-size:20px;font-weight:700;margin-top:6px">강남대성기숙 퀘타(QUETTA) 학원장 <span style="display:inline-block;width:70px;height:70px;border:2px solid #c00;border-radius:50%;color:#c00;font-size:14px;text-align:center;line-height:66px;font-weight:700;margin-left:10px;vertical-align:middle">[직인]</span></div>
+      <div style="font-size:20px;font-weight:700;margin-top:6px">강남대성기숙 퀘타(QUETTA) 학원장 ${
+        sealImageUrl
+          ? `<img src="${sealImageUrl}" crossorigin="anonymous" style="display:inline-block;width:80px;height:80px;object-fit:contain;margin-left:10px;vertical-align:middle">`
+          : `<span style="display:inline-block;width:70px;height:70px;border:2px solid #c00;border-radius:50%;color:#c00;font-size:14px;text-align:center;line-height:66px;font-weight:700;margin-left:10px;vertical-align:middle">[직인]</span>`
+      }</div>
     </div>
   </div>`;
 }
@@ -3511,8 +3603,13 @@ async function certIssueOne(stu, type, bday, courseName, purpose, issuer) {
       certText: CERT_TEXTS[type],
     });
     $('certPdfContainer').innerHTML = html;
-    // html2canvas
-    const canvas = await html2canvas($('certPdfContainer').firstElementChild, {scale:2, backgroundColor:'#fff'});
+    // html2canvas (직인 이미지 CORS 처리)
+    const canvas = await html2canvas($('certPdfContainer').firstElementChild, {
+      scale: 2,
+      backgroundColor: '#fff',
+      useCORS: true,
+      allowTaint: false
+    });
     const imgData = canvas.toDataURL('image/png');
     // A4: 210x297mm
     const { jsPDF } = window.jspdf;
