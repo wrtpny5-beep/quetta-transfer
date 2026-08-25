@@ -789,18 +789,27 @@ th:hover .sort-ind{opacity:1}
                 <input type="text" id="certIssuer" placeholder="발급자 이름" oninput="certUpdatePreview();certSaveIssuerLive()">
               </div>
               <div style="border-top:1px solid var(--warm2);padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-                <button class="btn btn-gold" onclick="certIssue()">📥 PDF 발급</button>
-                <button class="btn btn-ghost" disabled title="Phase 2 예정" style="opacity:.5;cursor:not-allowed">✉ 이메일 발송 (준비중)</button>
+                <button class="btn btn-gold" onclick="certIssue('pdf')">📥 PDF 발급</button>
+                <button class="btn btn-gold" onclick="certIssue('print')">🖨️ 인쇄 발급</button>
                 <button class="btn btn-ghost" onclick="certReset()">초기화</button>
               </div>
               <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-size:13px;color:var(--t2)">✉️ 이메일 발송 설정 (관리자)</summary>
                 <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px;display:grid;gap:10px">
                   <div style="font-size:12px;color:var(--t3)">
-                    그룹웨어 메일쓰기 창을 새 탭으로 열고, 받는사람/제목/본문을 복사 붙여넣는 방식입니다.<br>
-                    학번-이메일 매칭은 공유된 구글 시트에서 자동 조회합니다.
+                    <strong>Apps Script + Brevo (자동 발송용)</strong> — 문서 일괄발송, 증명서 자동 발송에 사용됩니다.<br>
+                    Apps Script 웹앱 배포 URL을 입력하세요.
+                  </div>
+                  <div class="fg" style="margin:0"><label>Apps Script 웹앱 URL</label><input type="text" id="ejsAppsScriptUrl" placeholder="https://script.google.com/macros/s/AKfyc.../exec"></div>
+                  <hr style="border:none;border-top:1px solid var(--warm2);margin:6px 0">
+                  <div style="font-size:12px;color:var(--t3)">
+                    <strong>그룹웨어 (반자동 발송용)</strong> — 증명서 단건 발송을 그룹웨어로 직접 하고 싶을 때 사용됩니다.
                   </div>
                   <div class="fg" style="margin:0"><label>그룹웨어 메일쓰기 URL</label><input type="text" id="ejsMailUrl" placeholder="https://gware.dshw.co.kr/mail/mail.do"></div>
+                  <hr style="border:none;border-top:1px solid var(--warm2);margin:6px 0">
+                  <div style="font-size:12px;color:var(--t3)">
+                    <strong>구글 시트 (학번-이메일 자동 조회용)</strong> — 발송 시 학번으로 이메일 자동 채움. 선택 사항.
+                  </div>
                   <div class="fg" style="margin:0"><label>구글 시트 URL 또는 ID</label><input type="text" id="ejsSheetUrl" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                     <div class="fg" style="margin:0"><label>학번 컬럼명</label><input type="text" id="ejsIdCol" placeholder="예: 학번"></div>
@@ -809,6 +818,7 @@ th:hover .sort-ind{opacity:1}
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn btn-gold btn-sm" onclick="saveEmailConfig()">💾 저장</button>
                     <button class="btn btn-ghost btn-sm" onclick="testSheetLookup()">🔍 시트 조회 테스트</button>
+                    <button class="btn btn-ghost btn-sm" onclick="testAppsScript()">🔌 Apps Script 연결 테스트</button>
                   </div>
                   <div id="emailConfigStatus" style="font-size:12px;color:var(--t3)"></div>
                 </div>
@@ -848,7 +858,7 @@ th:hover .sort-ind{opacity:1}
                 <thead><tr>
                   <th>증명서 번호</th><th>발급일</th><th>종류</th>
                   <th>학번</th><th>성명</th><th>과정</th><th>용도</th><th>발급자</th>
-                  <th class="center">이메일</th>
+                  <th class="center">관리</th>
                 </tr></thead>
                 <tbody id="certHistoryBody"></tbody>
               </table>
@@ -858,6 +868,94 @@ th:hover .sort-ind{opacity:1}
 
         <!-- PDF 생성용 숨김 컨테이너 (A4 실제 크기) -->
         <div id="certPdfContainer" style="position:absolute;left:-9999px;top:-9999px;width:794px;height:1123px;background:#fff"></div>
+      </div>
+
+      <!-- 문서 일괄발송 -->
+      <div class="view" id="vBulkSend">
+        <div class="pg-head">
+          <div><div class="pg-title">문서 일괄발송</div><div class="pg-sub">PDF 파일과 학번·이메일 엑셀을 업로드하면 자동 매칭해서 EmailJS로 발송합니다.</div></div>
+        </div>
+
+        <!-- 단계 1: 파일 업로드 -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><div class="card-head-title">① 파일 업로드</div></div>
+          <div class="card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <!-- Excel -->
+              <div>
+                <div style="font-size:13px;color:var(--t2);margin-bottom:6px;font-weight:600">📊 학번·이메일 엑셀</div>
+                <div style="font-size:12px;color:var(--t3);margin-bottom:8px">필수 컬럼: <code>학번</code>, <code>이메일</code> (있으면 <code>이름</code>도 사용됨)</div>
+                <label class="upload-zone" for="bulkExcelFile" style="min-height:100px">
+                  <div class="uz-icon" style="font-size:32px">📊</div>
+                  <div class="uz-text">엑셀/CSV 파일 선택</div>
+                  <div class="uz-sub">.csv · .xlsx · .xls</div>
+                </label>
+                <input type="file" id="bulkExcelFile" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleBulkExcel(this)">
+                <div id="bulkExcelStatus" style="margin-top:8px;font-size:13px;color:var(--t3)"></div>
+              </div>
+              <!-- PDFs -->
+              <div>
+                <div style="font-size:13px;color:var(--t2);margin-bottom:6px;font-weight:600">📄 PDF 파일들</div>
+                <div style="font-size:12px;color:var(--t3);margin-bottom:8px">파일명 <b>마지막 4자리 숫자 = 학번</b>으로 매칭 (예: <code>재원증명서_홍길동_5435.pdf</code>)</div>
+                <label class="upload-zone" for="bulkPdfFiles" style="min-height:100px">
+                  <div class="uz-icon" style="font-size:32px">📄</div>
+                  <div class="uz-text">PDF 여러 개 선택</div>
+                  <div class="uz-sub">.pdf (다중 선택 가능)</div>
+                </label>
+                <input type="file" id="bulkPdfFiles" accept=".pdf" multiple style="display:none" onchange="handleBulkPdfs(this)">
+                <div id="bulkPdfStatus" style="margin-top:8px;font-size:13px;color:var(--t3)"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 단계 2: 이메일 내용 -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head"><div class="card-head-title">② 이메일 내용 (모든 수신자 공통)</div></div>
+          <div class="card-body">
+            <div class="fg">
+              <label>제목</label>
+              <input type="text" id="bulkSubject" value="[강남대성기숙 QUETTA] 서류 발송 안내">
+            </div>
+            <div class="fg">
+              <label>본문 <span style="font-size:12px;color:var(--t3);font-weight:400">플레이스홀더: {학번}, {이름}, {파일명}</span></label>
+              <textarea id="bulkBody" rows="8" style="width:100%;padding:10px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:13px;resize:vertical">안녕하세요, {이름} 학생/학부모님.
+강남대성기숙 QUETTA 행정실입니다.
+
+요청하신 서류를 첨부하여 발송드립니다.
+확인 부탁드립니다.
+
+감사합니다.
+
+Good Better Best
+강남대성기숙 QUETTA</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- 단계 3: 매칭 미리보기 -->
+        <div class="card" id="bulkPreviewCard" style="display:none;margin-bottom:16px">
+          <div class="card-head">
+            <div class="card-head-title">③ 매칭 미리보기 <span id="bulkPreviewCount" style="font-weight:400;font-size:12px;color:var(--t3)"></span></div>
+            <button class="btn btn-gold" onclick="bulkSendExecute()">📧 일괄 발송 실행</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr>
+                <th>파일명</th><th>학번</th><th>이름</th><th>수신 이메일</th><th class="center">상태</th>
+              </tr></thead>
+              <tbody id="bulkPreviewBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 진행 로그 -->
+        <div class="card" id="bulkLogCard" style="display:none">
+          <div class="card-head"><div class="card-head-title">📝 발송 결과</div></div>
+          <div class="card-body">
+            <div id="bulkLogBody" style="font-size:13px;line-height:1.6;max-height:400px;overflow-y:auto"></div>
+          </div>
+        </div>
       </div>
 
     </main>
@@ -907,8 +1005,9 @@ th:hover .sort-ind{opacity:1}
     <div class="modal-foot" style="flex-wrap:wrap;gap:6px">
       <button class="btn btn-ghost" onclick="closeOverlay('emailSendOverlay')">닫기</button>
       <button class="btn btn-ghost" onclick="downloadCertPdfForEmail()">📥 PDF 다운로드</button>
-      <button class="btn btn-gold" onclick="openGroupwareMail()">📧 그룹웨어 열기</button>
-      <button class="btn btn-gold" onclick="markEmailSent()">✅ 발송 완료 기록</button>
+      <button class="btn btn-ghost" onclick="openGroupwareMail()">📧 그룹웨어 열기</button>
+      <button class="btn btn-ghost" onclick="markEmailSent()">✅ 발송 완료 기록</button>
+      <button class="btn btn-gold" onclick="sendCertEmailAuto()">✉️ 자동 발송</button>
     </div>
   </div>
 </div>
@@ -1395,7 +1494,8 @@ function buildNav() {
       <div class="nav-item" onclick="switchTab('vImport',this)">데이터 import</div>
       <div class="nav-item" onclick="switchTab('vClasses',this)">반 관리</div>
       <div class="nav-item" onclick="switchTab('vDocsAdmin',this)">서류 관리</div>
-      <div class="nav-item" onclick="switchTab('vCert',this)">증명서 발급</div>`;
+      <div class="nav-item" onclick="switchTab('vCert',this)">증명서 발급</div>
+      <div class="nav-item" onclick="switchTab('vBulkSend',this)">문서 일괄발송</div>`;
   } else {
     nav.innerHTML = `
       <div class="nav-sec">내 반</div>
@@ -1435,6 +1535,7 @@ window.switchTab = (id, el) => {
     vDocs:       renderDocs,
     vDocsAdmin:  renderDocsAdmin,
     vCert:       renderCert,
+    vBulkSend:   renderBulkSend,
   })[id]?.();
 };
 
@@ -3531,8 +3632,8 @@ function certSaveIssuer() {
 }
 window.certSaveIssuerLive = certSaveIssuer;
 
-// 단건 발급
-window.certIssue = async () => {
+// 단건 발급 (mode: 'pdf' | 'print')
+window.certIssue = async (mode = 'pdf') => {
   const type = $('certType').value;
   const sid = $('certStudentId').value.trim();
   const stu = students.find(s => String(s.studentId) === sid);
@@ -3546,11 +3647,62 @@ window.certIssue = async () => {
   const issuer = $('certIssuer').value.trim();
   if (!issuer) return toast('발급자 이름을 입력해주세요.', true);
 
-  await certIssueOne(stu, type, bday, courseName, purpose, issuer);
+  await certIssueOne(stu, type, bday, courseName, purpose, issuer, mode);
 };
 
 // 실제 발급 로직 (단건, 일괄에서도 재사용)
-async function certIssueOne(stu, type, bday, courseName, purpose, issuer) {
+// 인쇄 창 열기 (별도 팝업에서 자동 print)
+async function certOutputPrint(html, meta) {
+  const printWindow = window.open('', '_blank', 'width=900,height=1000');
+  if (!printWindow) {
+    toast('팝업이 차단되었습니다. 브라우저 팝업 허용 후 재시도해주세요.', true);
+    throw new Error('Popup blocked');
+  }
+  // 상대 URL (seal.png 등) 해석용 base
+  const baseHref = location.href.replace(/[^/]*$/, '');
+  const title = `${meta.type} ${meta.number} - ${meta.studentName}`;
+  printWindow.document.open();
+  printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <base href="${baseHref}">
+  <title>${title}</title>
+  <style>
+    @page { size: A4 portrait; margin: 0; }
+    html, body { margin: 0; padding: 0; background: #fff; }
+    body > div { margin: 0 auto; }
+    @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+  </style>
+</head>
+<body>${html}
+<script>
+  window.addEventListener('load', function() {
+    var imgs = document.images;
+    var toWait = imgs.length;
+    function readyPrint() {
+      setTimeout(function() {
+        window.focus();
+        window.print();
+        setTimeout(function() { try { window.close(); } catch(e){} }, 300);
+      }, 200);
+    }
+    if (toWait === 0) { readyPrint(); return; }
+    var loaded = 0;
+    function tick() { if (++loaded >= toWait) readyPrint(); }
+    for (var i = 0; i < imgs.length; i++) {
+      if (imgs[i].complete) tick();
+      else { imgs[i].onload = tick; imgs[i].onerror = tick; }
+    }
+    setTimeout(readyPrint, 3000); // fallback timeout
+  });
+<\/script>
+</body>
+</html>`);
+  printWindow.document.close();
+}
+
+async function certIssueOne(stu, type, bday, courseName, purpose, issuer, mode = 'pdf') {
   const course = CERT_COURSES.find(c => c.name === courseName);
   const cls = classes.find(c => c.id === stu.classId);
   try {
@@ -3572,10 +3724,10 @@ async function certIssueOne(stu, type, bday, courseName, purpose, issuer) {
       stu.birthday = bday;
     }
 
-    // 3) PDF 생성용 HTML 렌더링 → html2canvas → jsPDF
+    // 3) HTML 생성
     const today = new Date();
     const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
-    const html = renderCertHTML({
+    const certData = {
       number, type,
       name: stu.name,
       studentId: stu.studentId,
@@ -3587,23 +3739,31 @@ async function certIssueOne(stu, type, bday, courseName, purpose, issuer) {
       purpose,
       issuedDate: todayStr,
       certText: CERT_TEXTS[type],
-    });
-    $('certPdfContainer').innerHTML = html;
-    // html2canvas (같은 origin이라 CORS 불필요)
-    const canvas = await html2canvas($('certPdfContainer').firstElementChild, {
-      scale: 2,
-      backgroundColor: '#fff'
-    });
-    const imgData = canvas.toDataURL('image/png');
-    // A4: 210x297mm
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
-    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
-    const fname = `${stu.studentId}_${stu.name}_${type}_${number}.pdf`;
-    pdf.save(fname);
-    $('certPdfContainer').innerHTML = '';
+    };
+    const html = renderCertHTML(certData);
 
-    // 4) 이력 저장
+    // 4) mode에 따라 PDF 다운로드 또는 인쇄창
+    if (mode === 'print') {
+      await certOutputPrint(html, {
+        type, number, studentName: stu.name, studentId: stu.studentId
+      });
+    } else {
+      // PDF 생성
+      $('certPdfContainer').innerHTML = html;
+      const canvas = await html2canvas($('certPdfContainer').firstElementChild, {
+        scale: 2,
+        backgroundColor: '#fff'
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      const fname = `${stu.studentId}_${stu.name}_${type}_${number}.pdf`;
+      pdf.save(fname);
+      $('certPdfContainer').innerHTML = '';
+    }
+
+    // 5) 이력 저장
     const record = {
       number, type,
       studentId: stu.studentId,
@@ -3625,7 +3785,7 @@ async function certIssueOne(stu, type, bday, courseName, purpose, issuer) {
 
     // 미리보기 갱신 (다음 번호 반영)
     certUpdatePreview();
-    toast(`${number} 발급 완료`);
+    toast(`${number} ${mode === 'print' ? '인쇄 발급 완료' : 'PDF 발급 완료'}`);
     return number;
   } catch (e) {
     console.error('certIssue error:', e);
@@ -3672,6 +3832,31 @@ window.certReset = () => {
   certUpdatePreview();
 };
 
+// 이력에서 재출력 (기존 번호 그대로, 새 이력 안 남김)
+window.reprintCert = async (certId) => {
+  const cert = certificates.find(c => c.id === certId);
+  if (!cert) return toast('증명서를 찾을 수 없습니다.', true);
+  const at = cert.issuedAt?.toDate ? cert.issuedAt.toDate() : new Date();
+  const todayStr = `${at.getFullYear()}년 ${at.getMonth()+1}월 ${at.getDate()}일`;
+  const html = renderCertHTML({
+    number: cert.number, type: cert.type,
+    name: cert.studentName, studentId: cert.studentId,
+    birthday: cert.birthday || '', className: cert.className || '',
+    course: cert.course,
+    periodStart: cert.periodStart, periodEnd: cert.periodEnd,
+    purpose: cert.purpose, issuedDate: todayStr,
+    certText: CERT_TEXTS[cert.type],
+  });
+  try {
+    await certOutputPrint(html, {
+      type: cert.type, number: cert.number,
+      studentName: cert.studentName, studentId: cert.studentId
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
 // 이력 렌더링
 function renderCertHistory() {
   const q = ($('certSearch')?.value || '').trim().toLowerCase();
@@ -3708,7 +3893,12 @@ function renderCertHistory() {
       <td style="font-size:12px">${c.course||''}</td>
       <td>${c.purpose||''}</td>
       <td>${c.issuer||''}</td>
-      <td class="center">${emailCell}</td>
+      <td class="center">
+        <div style="display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="reprintCert('${c.id}')" title="재출력" style="font-size:11px">🖨️</button>
+          ${emailCell}
+        </div>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -3789,6 +3979,7 @@ async function loadEmailConfig() {
     const snap = await getDoc(doc(db, 'certConfig', 'emailConfig'));
     emailConfig = snap.exists() ? snap.data() : null;
     if (emailConfig) {
+      $('ejsAppsScriptUrl').value = emailConfig.appsScriptUrl || '';
       $('ejsMailUrl').value = emailConfig.mailUrl || '';
       $('ejsSheetUrl').value = emailConfig.sheetUrl || '';
       $('ejsIdCol').value = emailConfig.idColumn || '';
@@ -3802,13 +3993,13 @@ async function loadEmailConfig() {
 
 window.saveEmailConfig = async () => {
   const cfg = {
+    appsScriptUrl: $('ejsAppsScriptUrl').value.trim(),
     mailUrl: $('ejsMailUrl').value.trim(),
     sheetUrl: $('ejsSheetUrl').value.trim(),
     idColumn: $('ejsIdCol').value.trim(),
     emailColumn: $('ejsEmailCol').value.trim(),
     updatedAt: serverTimestamp(),
   };
-  if (!cfg.mailUrl) return toast('그룹웨어 메일쓰기 URL은 필수입니다.', true);
   try {
     await setDoc(doc(db, 'certConfig', 'emailConfig'), cfg);
     emailConfig = cfg;
@@ -3819,6 +4010,48 @@ window.saveEmailConfig = async () => {
     toast('저장 실패: ' + e.message, true);
   }
 };
+
+// Apps Script 연결 테스트 (GET 요청)
+window.testAppsScript = async () => {
+  const url = $('ejsAppsScriptUrl').value.trim();
+  if (!url) return toast('Apps Script URL을 먼저 입력하세요.', true);
+  $('emailConfigStatus').innerHTML = '<span style="color:var(--t2)">Apps Script 연결 중...</span>';
+  try {
+    const resp = await fetch(url, { method: 'GET' });
+    const text = await resp.text();
+    let data;
+    try { data = JSON.parse(text); } catch { data = { raw: text }; }
+    if (data.status) {
+      $('emailConfigStatus').innerHTML = `<span style="color:var(--g700)">✓ Apps Script 정상 (${data.status})</span>`;
+      toast('Apps Script 연결 성공');
+    } else {
+      $('emailConfigStatus').innerHTML = `<span style="color:#E74C3C">응답이 예상과 다름: ${text.substring(0,80)}</span>`;
+    }
+  } catch (e) {
+    $('emailConfigStatus').innerHTML = `<span style="color:#E74C3C">연결 실패: ${e.message}</span>`;
+  }
+};
+
+// Apps Script를 통해 이메일 발송 (공통 헬퍼)
+async function sendEmailViaAppsScript({ toEmail, subject, body, attachmentName, attachmentBase64 }) {
+  if (!emailConfig?.appsScriptUrl) throw new Error('Apps Script URL이 설정되지 않았습니다.');
+  const payload = { toEmail, subject, body };
+  if (attachmentName && attachmentBase64) {
+    payload.attachmentName = attachmentName;
+    payload.attachmentBase64 = attachmentBase64;
+  }
+  const resp = await fetch(emailConfig.appsScriptUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // Apps Script는 text/plain으로 받는 게 안전 (CORS preflight 회피)
+    body: JSON.stringify(payload),
+  });
+  const text = await resp.text();
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error('응답 파싱 실패: ' + text.substring(0,120)); }
+  if (!data.ok) throw new Error(data.error || 'Unknown error');
+  return data;
+}
 
 // 시트 URL에서 ID 추출
 function extractSheetId(input) {
@@ -3992,6 +4225,65 @@ window.downloadCertPdfForEmail = async () => {
 };
 
 // 발송 완료 기록 (그룹웨어에서 발송 완료 후 사용자가 클릭)
+// 증명서 이메일 자동 발송 (Apps Script 사용)
+window.sendCertEmailAuto = async () => {
+  const certId = $('emailSendCertId').value;
+  const toEmail = $('emailSendTo').value.trim();
+  const subject = $('emailSendSubject').value.trim();
+  const body = $('emailSendBody').value;
+  if (!toEmail || !toEmail.includes('@')) return toast('유효한 이메일을 입력하세요.', true);
+  const cert = certificates.find(c => c.id === certId);
+  if (!cert) return toast('증명서를 찾을 수 없습니다.', true);
+  if (!emailConfig?.appsScriptUrl) return toast('Apps Script URL이 설정되지 않았습니다.', true);
+
+  $('emailSendStatus').innerHTML = '<span style="color:var(--t2)">PDF 생성 및 발송 중...</span>';
+  try {
+    // PDF 재생성
+    const at = cert.issuedAt?.toDate ? cert.issuedAt.toDate() : new Date();
+    const todayStr = `${at.getFullYear()}년 ${at.getMonth()+1}월 ${at.getDate()}일`;
+    const html = renderCertHTML({
+      number: cert.number, type: cert.type,
+      name: cert.studentName, studentId: cert.studentId,
+      birthday: cert.birthday || '', className: cert.className || '',
+      course: cert.course,
+      periodStart: cert.periodStart, periodEnd: cert.periodEnd,
+      purpose: cert.purpose, issuedDate: todayStr,
+      certText: CERT_TEXTS[cert.type],
+    });
+    $('certPdfContainer').innerHTML = html;
+    const canvas = await html2canvas($('certPdfContainer').firstElementChild, { scale: 2, backgroundColor: '#fff' });
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+    const pdfBase64 = pdf.output('datauristring').split(',')[1];
+    $('certPdfContainer').innerHTML = '';
+
+    // Apps Script로 발송
+    await sendEmailViaAppsScript({
+      toEmail, subject, body,
+      attachmentName: `${cert.studentId}_${cert.studentName}_${cert.type}_${cert.number}.pdf`,
+      attachmentBase64: pdfBase64,
+    });
+
+    // 발송 완료 이력 저장
+    await updateDoc(doc(db, 'certificates', certId), {
+      emailSentAt: serverTimestamp(),
+      emailTo: toEmail,
+    });
+    cert.emailSentAt = new Date();
+    cert.emailTo = toEmail;
+
+    toast('이메일 자동 발송 완료');
+    closeOverlay('emailSendOverlay');
+    if (certTab === 'history') renderCertHistory();
+  } catch (e) {
+    console.error(e);
+    $('emailSendStatus').innerHTML = `<span style="color:#E74C3C">발송 실패: ${e.message}</span>`;
+    toast('발송 실패: ' + e.message, true);
+  }
+};
+
 window.markEmailSent = async () => {
   const certId = $('emailSendCertId').value;
   const toEmail = $('emailSendTo').value.trim();
@@ -4011,6 +4303,179 @@ window.markEmailSent = async () => {
   } catch (e) {
     toast('기록 실패: ' + e.message, true);
   }
+};
+
+// ============================================================
+// 문서 일괄발송 (EmailJS + Excel + PDF)
+// ============================================================
+
+let bulkExcelMap = null;    // { studentId: { email, name } }
+let bulkPdfFiles = [];      // [{ file, filename, studentId }]
+
+function renderBulkSend() {
+  if (!emailConfig) loadEmailConfig();
+}
+
+// 파일명 마지막 4자리 숫자 = 학번
+function extractStudentIdFromFilename(filename) {
+  const m = filename.replace(/\.[^.]+$/, '').match(/(\d{4})$/);
+  return m ? m[1] : null;
+}
+
+window.handleBulkExcel = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let rows = [];
+      if (file.name.toLowerCase().endsWith('.csv')) {
+        const text = new TextDecoder('utf-8').decode(e.target.result);
+        rows = text.split(/\r?\n/).map(l => l.split(',').map(c => c.trim()));
+      } else {
+        const wb = XLSX.read(e.target.result, {type:'array'});
+        rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:''});
+      }
+      if (!rows.length) return toast('빈 파일입니다.', true);
+      let headerRow = -1, idIdx = -1, emailIdx = -1, nameIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const r = rows[i].map(c => String(c).trim());
+        const ai = r.findIndex(c => c === '학번');
+        const bi = r.findIndex(c => c === '이메일' || c === '이메일 주소' || c.toLowerCase() === 'email');
+        if (ai >= 0 && bi >= 0) {
+          headerRow = i; idIdx = ai; emailIdx = bi;
+          nameIdx = r.findIndex(c => c === '이름' || c === '성명' || c.toLowerCase() === 'name');
+          break;
+        }
+      }
+      if (headerRow < 0) return toast('헤더에 "학번"과 "이메일" 컬럼이 필요합니다.', true);
+      bulkExcelMap = {};
+      for (let i = headerRow + 1; i < rows.length; i++) {
+        const r = rows[i];
+        const sid = String(r[idIdx] || '').trim();
+        const email = String(r[emailIdx] || '').trim();
+        const name = nameIdx >= 0 ? String(r[nameIdx] || '').trim() : '';
+        if (sid && email) bulkExcelMap[sid] = { email, name };
+      }
+      const count = Object.keys(bulkExcelMap).length;
+      $('bulkExcelStatus').innerHTML = `<span style="color:var(--g700)">✓ ${file.name} — ${count}건의 학번-이메일 매핑</span>`;
+      refreshBulkPreview();
+    } catch (err) {
+      toast('엑셀 파싱 실패: ' + err.message, true);
+      console.error(err);
+    }
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+window.handleBulkPdfs = (input) => {
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
+  bulkPdfFiles = files.map(f => ({
+    file: f,
+    filename: f.name,
+    studentId: extractStudentIdFromFilename(f.name),
+  }));
+  const withId = bulkPdfFiles.filter(p => p.studentId).length;
+  const withoutId = bulkPdfFiles.length - withId;
+  $('bulkPdfStatus').innerHTML = withoutId
+    ? `<span style="color:var(--g700)">✓ ${files.length}개 파일</span> <span style="color:#E74C3C">(학번 추출 실패: ${withoutId}개)</span>`
+    : `<span style="color:var(--g700)">✓ ${files.length}개 파일 (모두 학번 추출 성공)</span>`;
+  refreshBulkPreview();
+  input.value = '';
+};
+
+function refreshBulkPreview() {
+  if (!bulkPdfFiles.length) {
+    $('bulkPreviewCard').style.display = 'none';
+    return;
+  }
+  const matches = bulkPdfFiles.map(p => {
+    if (!p.studentId) return { ...p, email: '', name: '', status: 'no-id' };
+    const excelMatch = bulkExcelMap ? bulkExcelMap[p.studentId] : null;
+    const stuFromApp = students.find(s => String(s.studentId) === p.studentId);
+    const email = excelMatch?.email || '';
+    const name = excelMatch?.name || stuFromApp?.name || '';
+    let status = 'ok';
+    if (!bulkExcelMap) status = 'no-excel';
+    else if (!email) status = 'no-email';
+    return { ...p, email, name, status };
+  });
+  window._bulkMatches = matches;
+  const okCount = matches.filter(m => m.status === 'ok').length;
+  $('bulkPreviewCount').textContent = `— ${matches.length}건 중 ${okCount}건 발송 가능`;
+  $('bulkPreviewBody').innerHTML = matches.map(m => {
+    let badge;
+    if (m.status === 'ok') badge = '<span class="bdg bdg-gold">발송 준비</span>';
+    else if (m.status === 'no-excel') badge = '<span class="bdg bdg-red">엑셀 없음</span>';
+    else if (m.status === 'no-id') badge = '<span class="bdg bdg-red">학번 추출 실패</span>';
+    else badge = '<span class="bdg bdg-red">엑셀에 학번 없음</span>';
+    return `<tr>
+      <td style="font-size:12px">${m.filename}</td>
+      <td>${m.studentId || '-'}</td>
+      <td>${m.name || '-'}</td>
+      <td>${m.email || '<span style="color:var(--t3)">-</span>'}</td>
+      <td class="center">${badge}</td>
+    </tr>`;
+  }).join('');
+  $('bulkPreviewCard').style.display = '';
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+window.bulkSendExecute = async () => {
+  if (!emailConfig?.appsScriptUrl) {
+    return toast('Apps Script URL이 설정되지 않았습니다. 증명서 발급 페이지 → 이메일 발송 설정에서 등록하세요.', true);
+  }
+  const matches = window._bulkMatches || [];
+  const toSend = matches.filter(m => m.status === 'ok');
+  if (!toSend.length) return toast('발송할 수 있는 항목이 없습니다.', true);
+  const subject = $('bulkSubject').value.trim();
+  const bodyTemplate = $('bulkBody').value;
+  if (!subject) return toast('제목을 입력하세요.', true);
+  if (!confirm(`${toSend.length}건을 순차 발송합니다. 계속할까요?\n(중간 취소는 어렵습니다)`)) return;
+
+  $('bulkLogCard').style.display = '';
+  $('bulkLogBody').innerHTML = '<div>발송 시작...</div>';
+  const logEl = $('bulkLogBody');
+  const log = (msg, color='var(--t2)') => {
+    logEl.innerHTML += `<div style="color:${color}">${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+
+  let ok = 0, err = 0;
+  for (const m of toSend) {
+    try {
+      const body = bodyTemplate
+        .replace(/\{학번\}/g, m.studentId)
+        .replace(/\{이름\}/g, m.name || '')
+        .replace(/\{파일명\}/g, m.filename);
+      const pdfBase64 = await readFileAsBase64(m.file);
+      await sendEmailViaAppsScript({
+        toEmail: m.email,
+        subject: subject,
+        body: body,
+        attachmentName: m.filename,
+        attachmentBase64: pdfBase64,
+      });
+      log(`✓ ${m.studentId} ${m.name} → ${m.email}`, 'var(--g700)');
+      ok++;
+      await new Promise(r => setTimeout(r, 500)); // Brevo rate limit 배려
+    } catch (e) {
+      log(`✗ ${m.studentId} ${m.name} → ${m.email} — ${e.message}`, '#E74C3C');
+      err++;
+    }
+  }
+  log(`<br><strong>완료: 성공 ${ok}건 / 실패 ${err}건</strong>`, 'var(--g900)');
+  toast(`일괄 발송 완료 — 성공 ${ok} / 실패 ${err}`);
 };
 
 </script>
