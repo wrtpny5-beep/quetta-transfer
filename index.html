@@ -740,6 +740,105 @@ th:hover .sort-ind{opacity:1}
         </div>
       </div>
 
+      <!-- 증명서 발급 -->
+      <div class="view" id="vCert">
+        <div class="pg-head">
+          <div><div class="pg-title">증명서 발급</div><div class="pg-sub">재원증명서·수강확인서·졸업증명서 발급 및 이력 관리</div></div>
+          <div class="pg-actions">
+            <button class="btn btn-ghost" id="certTabForm" onclick="certSwitchTab('form')">📝 발급</button>
+            <button class="btn btn-ghost" id="certTabHistory" onclick="certSwitchTab('history')">📋 이력</button>
+          </div>
+        </div>
+
+        <!-- 발급 폼 -->
+        <div id="certFormPanel" style="display:grid;grid-template-columns:1fr 620px;gap:16px;align-items:start">
+          <div class="card">
+            <div class="card-head"><div class="card-head-title">발급 정보</div></div>
+            <div class="card-body" style="display:grid;gap:14px">
+              <div class="fg">
+                <label>증명서 종류</label>
+                <select id="certType" onchange="certUpdatePreview()">
+                  <option value="재원증명서">재원증명서</option>
+                  <option value="수강확인서">수강확인서</option>
+                  <option value="졸업증명서">졸업증명서</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>학번</label>
+                <div style="display:flex;gap:6px">
+                  <input type="text" id="certStudentId" placeholder="학번 입력" oninput="certLookupStudent()" style="flex:1">
+                  <button class="btn btn-ghost btn-sm" onclick="certLookupStudent()">조회</button>
+                </div>
+                <div id="certStudentInfo" style="margin-top:6px;font-size:13px;color:var(--t3)"></div>
+              </div>
+              <div class="fg">
+                <label>생년월일 <span style="font-size:12px;color:var(--t3);font-weight:400">(YYYY-MM-DD 또는 YYYY.MM.DD)</span></label>
+                <input type="text" id="certBirthday" placeholder="예: 2005-03-15" oninput="certUpdatePreview()">
+                <div id="certBirthdayNote" style="margin-top:4px;font-size:12px;color:var(--t3)"></div>
+              </div>
+              <div class="fg">
+                <label>과정 (수강반)</label>
+                <select id="certCourse" onchange="certUpdatePreview()"></select>
+              </div>
+              <div class="fg">
+                <label>용도</label>
+                <input type="text" id="certPurpose" placeholder="예: 정부24 전입신고용" oninput="certUpdatePreview()">
+              </div>
+              <div class="fg">
+                <label>발급자 이름</label>
+                <input type="text" id="certIssuer" placeholder="발급자 이름" oninput="certUpdatePreview();certSaveIssuerLive()">
+              </div>
+              <div style="border-top:1px solid var(--warm2);padding-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="btn btn-gold" onclick="certIssue()">📥 PDF 발급</button>
+                <button class="btn btn-ghost" disabled title="Phase 2 예정" style="opacity:.5;cursor:not-allowed">✉ 이메일 발송 (준비중)</button>
+                <button class="btn btn-ghost" onclick="certReset()">초기화</button>
+              </div>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-size:13px;color:var(--t2)">🚌 일괄 발급 (여러 학번)</summary>
+                <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px">
+                  <div class="fg">
+                    <label>학번 목록 (한 줄에 하나씩)</label>
+                    <textarea id="certBulkIds" placeholder="5435&#10;5430&#10;5013" rows="5" style="width:100%;padding:8px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:13px"></textarea>
+                  </div>
+                  <div style="font-size:12px;color:var(--t3);margin-bottom:8px">위 폼의 종류·과정·용도·발급자 정보를 공통으로 사용합니다. 생년월일 미등록 학생은 건너뜁니다.</div>
+                  <button class="btn btn-gold btn-sm" onclick="certBulkIssue()">📥 일괄 PDF 발급</button>
+                </div>
+              </details>
+            </div>
+          </div>
+          <!-- 미리보기 (A4 세로) -->
+          <div>
+            <div style="font-size:13px;color:var(--t2);margin-bottom:8px">📄 미리보기 (A4 세로)</div>
+            <div style="background:#fff;border:1px solid var(--warm2);box-shadow:0 4px 12px rgba(0,0,0,.08);overflow:hidden">
+              <div id="certPreview" style="width:100%;aspect-ratio:1/1.414;position:relative"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 이력 -->
+        <div id="certHistoryPanel" style="display:none">
+          <div class="tool-bar">
+            <input class="search-input" id="certSearch" placeholder="학번·이름·증명서번호 검색" oninput="renderCertHistory()">
+            <button class="btn btn-gold" onclick="exportCertHistory()">📥 엑셀 내보내기</button>
+            <button class="btn btn-ghost" onclick="window.print()">🖨️ 인쇄하기</button>
+          </div>
+          <div class="card">
+            <div class="tbl-wrap">
+              <table class="tbl" id="certHistoryTable">
+                <thead><tr>
+                  <th>증명서 번호</th><th>발급일</th><th>종류</th>
+                  <th>학번</th><th>성명</th><th>과정</th><th>용도</th><th>발급자</th>
+                </tr></thead>
+                <tbody id="certHistoryBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- PDF 생성용 숨김 컨테이너 (A4 실제 크기) -->
+        <div id="certPdfContainer" style="position:absolute;left:-9999px;top:-9999px;width:794px;height:1123px;background:#fff"></div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -771,6 +870,7 @@ th:hover .sort-ind{opacity:1}
         <div class="fg"><label>성별</label><select id="stuGender"><option value="남">남</option><option value="여">여</option></select></div>
       </div>
       <div class="fg"><label>성명</label><input type="text" id="stuName" placeholder="이름"></div>
+      <div class="fg"><label>생년월일 <span style="font-size:12px;color:var(--t3);font-weight:400">(선택, 증명서 발급용)</span></label><input type="text" id="stuBirthday" placeholder="YYYY-MM-DD"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
         <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="cbForm"> 전입신고서</label>
         <label style="display:flex;align-items:center;gap:6px;font-size:13px"><input type="checkbox" id="cbIns"> 건강보험증</label>
@@ -930,6 +1030,8 @@ th:hover .sort-ind{opacity:1}
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -970,7 +1072,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged,
          browserSessionPersistence, browserLocalPersistence, setPersistence }
   from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-         getDocs, getDoc, setDoc, query, orderBy, writeBatch, serverTimestamp, onSnapshot }
+         getDocs, getDoc, setDoc, query, orderBy, writeBatch, runTransaction, serverTimestamp, onSnapshot }
   from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 
 const app  = initializeApp(FB);
@@ -981,7 +1083,7 @@ const db   = getFirestore(app);
 
 // ── 상태 ──
 let me, meDoc;
-let classes=[], students=[], schedules=[], records=[], users=[], suneungRecords=[];
+let classes=[], students=[], schedules=[], records=[], users=[], suneungRecords=[], certificates=[];
 let activeClsFilter = null;
 let importRows = [];
 let teacherSession = null; // { classIds: [...], name } — 담임 세션
@@ -1160,6 +1262,14 @@ async function reload() {
     console.warn('[suneungRecords] 로드 실패 - Firestore Rules 확인 필요:', e.message);
     suneungRecords = [];
   }
+  // certificates 로드 (증명서 발급 이력) — 마찬가지로 방어
+  try {
+    const cSnap = await getDocs(query(collection(db,'certificates'), orderBy('issuedAt','desc')));
+    certificates = cSnap.docs.map(d=>({id:d.id,...d.data()}));
+  } catch(e) {
+    console.warn('[certificates] 로드 실패 - Firestore Rules 확인 필요:', e.message);
+    certificates = [];
+  }
 }
 
 // records 실시간 리스너 설정
@@ -1215,7 +1325,8 @@ function buildNav() {
       <div class="nav-sec">관리</div>
       <div class="nav-item" onclick="switchTab('vImport',this)">데이터 import</div>
       <div class="nav-item" onclick="switchTab('vClasses',this)">반 관리</div>
-      <div class="nav-item" onclick="switchTab('vDocsAdmin',this)">서류 관리</div>`;
+      <div class="nav-item" onclick="switchTab('vDocsAdmin',this)">서류 관리</div>
+      <div class="nav-item" onclick="switchTab('vCert',this)">증명서 발급</div>`;
   } else {
     nav.innerHTML = `
       <div class="nav-sec">내 반</div>
@@ -1254,6 +1365,7 @@ window.switchTab = (id, el) => {
     vAllSchedule: renderAllSchedule,
     vDocs:       renderDocs,
     vDocsAdmin:  renderDocsAdmin,
+    vCert:       renderCert,
   })[id]?.();
 };
 
@@ -2453,6 +2565,7 @@ window.onStuClassChange = (selectedSub) => {
 window.openStuModal = () => {
   $('stuModalTitle').textContent='학생 추가'; $('stuEditId').value='';
   $('stuNo').value=$('stuName').value=$('stuNotes').value='';
+  $('stuBirthday').value='';
   $('stuGender').value='남'; $('stuRound').value='';
   ['cbForm','cbIns','cbId','cbMil'].forEach(id=>$(id).checked=false);
 
@@ -2475,6 +2588,7 @@ window.editStudent = id => {
   $('stuModalTitle').textContent='학생 수정'; $('stuEditId').value=id;
   $('stuClass').innerHTML=classes.map(c=>`<option value="${c.id}" ${c.id===s.classId?'selected':''}>${c.name}반</option>`).join('');
   $('stuNo').value=s.studentId||''; $('stuName').value=s.name||'';
+  $('stuBirthday').value=s.birthday||'';
   $('stuGender').value=s.gender||'남'; $('stuNotes').value=r.notes||''; $('stuRound').value=r.round||'';
   $('cbForm').checked=!!r.form; $('cbIns').checked=!!r.insurance;
   $('cbId').checked=!!r.idCard; $('cbMil').checked=!!r.military;
@@ -2485,7 +2599,8 @@ window.editStudent = id => {
 window.saveStudent = async () => {
   const eid=$('stuEditId').value;
   const classId=$('stuClass').value, studentId=$('stuNo').value.trim(),
-        name=$('stuName').value.trim(), gender=$('stuGender').value;
+        name=$('stuName').value.trim(), gender=$('stuGender').value,
+        birthday=$('stuBirthday').value.trim();
   if(!name||!classId) return toast('반과 이름은 필수입니다.',true);
 
   // 묶인 반(콤마 포함)이면 세부반 필수
@@ -2494,7 +2609,7 @@ window.saveStudent = async () => {
   const subClass = isCombined ? $('stuSubClass').value : '';
   if (isCombined && !subClass) return toast('세부반을 선택해 주세요.',true);
 
-  const sData={classId,studentId,name,gender,subClass,updatedAt:serverTimestamp()};
+  const sData={classId,studentId,name,gender,subClass,birthday,updatedAt:serverTimestamp()};
   const rData={form:$('cbForm').checked,insurance:$('cbIns').checked,
                idCard:$('cbId').checked,military:$('cbMil').checked,
                round:$('stuRound').value,notes:$('stuNotes').value,updatedAt:serverTimestamp()};
@@ -3165,6 +3280,404 @@ function $(id){ return document.getElementById(id); }
 
 window.renderStudents=renderStudents;
 window.renderMyStudents=renderMyClass;
+
+// ============================================================
+// 증명서 발급 (Certificate Issuance)
+// ============================================================
+
+// 과정별 수업기간 (Google Sheet 마스터 데이터 이관)
+const CERT_COURSES = [
+  { name: '2022 N수 정규시즌', start: '2022. 8. 7', end: '2022. 11. 18' },
+  { name: '2023 N수 정규시즌', start: '2023. 2. 19', end: '2023. 11. 16' },
+  { name: '2024 N수 정규시즌', start: '2024. 2. 18', end: '2024. 11. 14' },
+  { name: '2024 N수 시즌ZERO', start: '2024. 1. 7', end: '2024. 2. 17' },
+  { name: '윈터스쿨', start: '2025. 12. 31', end: '2026. 1. 31' },
+  { name: '2025 N수 시즌ZERO', start: '2025. 1. 5', end: '2025. 2. 15' },
+  { name: '2025 N수 정규시즌', start: '2025. 2. 16', end: '2025. 11. 13' },
+  { name: '2026 윈터스쿨', start: '2025. 12. 31', end: '2026. 1. 31' },
+  { name: '2026 N수 시즌ZERO', start: '2026. 1. 1', end: '2026. 2. 19' },
+  { name: '2026 N수 정규시즌', start: '2026. 2. 20', end: '2026. 11. 19' },
+];
+
+// 종류별 증명 문구
+const CERT_TEXTS = {
+  '재원증명서': '위 학생은 현재 본 학원 학생임을 증명합니다.',
+  '수강확인서': '위 학생은 상기 수업기간동안 본 학원에 등록했음을 증명합니다.',
+  '졸업증명서': '위 학생은 상기 수업기간동안 본 학원을 수료하였음을 증명합니다.',
+};
+
+// 발급자 이름 로컬 저장 (편의)
+const CERT_ISSUER_KEY = 'quetta_cert_issuer';
+
+let certTab = 'form'; // 'form' | 'history'
+
+function renderCert() {
+  // 과정 드롭다운 채우기 (한 번만)
+  const sel = $('certCourse');
+  if (sel && !sel.options.length) {
+    sel.innerHTML = '<option value="">— 선택 —</option>' +
+      CERT_COURSES.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
+  }
+  // 저장된 발급자 이름 복원
+  if ($('certIssuer') && !$('certIssuer').value) {
+    const saved = localStorage.getItem(CERT_ISSUER_KEY);
+    if (saved) $('certIssuer').value = saved;
+    else if (meDoc?.name) $('certIssuer').value = meDoc.name;
+  }
+  certSwitchTab(certTab);
+}
+
+window.certSwitchTab = (tab) => {
+  certTab = tab;
+  $('certFormPanel').style.display    = (tab === 'form')    ? 'grid' : 'none';
+  $('certHistoryPanel').style.display = (tab === 'history') ? 'block' : 'none';
+  $('certTabForm').className    = 'btn ' + (tab==='form'    ? 'btn-gold' : 'btn-ghost');
+  $('certTabHistory').className = 'btn ' + (tab==='history' ? 'btn-gold' : 'btn-ghost');
+  if (tab === 'form') certUpdatePreview();
+  else renderCertHistory();
+};
+
+// 학번 조회 → 성명·생년월일·반 자동 채움
+window.certLookupStudent = () => {
+  const sid = $('certStudentId').value.trim();
+  const info = $('certStudentInfo');
+  const bdayNote = $('certBirthdayNote');
+  if (!sid) { info.textContent = ''; bdayNote.textContent = ''; certUpdatePreview(); return; }
+  const stu = students.find(s => String(s.studentId) === sid);
+  if (!stu) {
+    info.innerHTML = `<span style="color:#E74C3C">학번 ${sid} 조회 실패 — 학생관리에 등록되지 않음</span>`;
+    bdayNote.textContent = '';
+    certUpdatePreview(); return;
+  }
+  const cls = classes.find(c => c.id === stu.classId);
+  info.innerHTML = `✓ <strong>${stu.name}</strong> · ${cls?cls.name+'반':''} · ${stu.gender||''}`;
+  // 생년월일 자동 채움
+  if (stu.birthday) {
+    $('certBirthday').value = stu.birthday;
+    bdayNote.innerHTML = '<span style="color:var(--g700)">등록된 생년월일 사용</span>';
+  } else {
+    $('certBirthday').value = '';
+    bdayNote.innerHTML = '<span style="color:#E74C3C">생년월일 미등록 — 아래에 입력하면 학생 정보에 자동 저장됩니다</span>';
+  }
+  certUpdatePreview();
+};
+
+// 미리보기 갱신
+window.certUpdatePreview = () => {
+  const type = $('certType').value || '재원증명서';
+  const sid  = $('certStudentId').value.trim();
+  const stu  = students.find(s => String(s.studentId) === sid);
+  const bday = $('certBirthday').value.trim();
+  const courseName = $('certCourse').value;
+  const course = CERT_COURSES.find(c => c.name === courseName);
+  const purpose = $('certPurpose').value.trim();
+  const cls = stu ? classes.find(c => c.id === stu.classId) : null;
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+  const year = today.getFullYear();
+  const nextNum = certNextNumberPreview();
+  const html = renderCertHTML({
+    number: nextNum,
+    type,
+    name: stu?.name || '________',
+    studentId: sid || '________',
+    birthday: bday || '________',
+    className: cls?.name || courseName || '________',
+    course: courseName || '________',
+    periodStart: course?.start || '________',
+    periodEnd: course?.end || '________',
+    purpose: purpose || '________',
+    issuedDate: todayStr,
+    certText: CERT_TEXTS[type] || '',
+  });
+  $('certPreview').innerHTML = `<div style="transform:scale(0.75);transform-origin:top left;width:794px;height:1123px">${html}</div>`;
+};
+
+// 다음 증명서 번호 미리보기 (실제 채번은 트랜잭션에서)
+function certNextNumberPreview() {
+  const year = new Date().getFullYear();
+  const yearCerts = certificates.filter(c => (c.number||'').startsWith(`${year}-`));
+  const lastNums = yearCerts.map(c => parseInt((c.number||'').match(/\d+-(\d+)/)?.[1] || '0')).filter(n => !isNaN(n));
+  const last = lastNums.length ? Math.max(...lastNums) : 33;
+  return `${year}-${last+1}(교)`;
+}
+
+// 증명서 HTML 생성 (A4 세로, 794x1123px)
+function renderCertHTML(d) {
+  return `<div style="width:794px;height:1123px;background:#fff;padding:100px 80px 60px;box-sizing:border-box;font-family:'Noto Serif KR','Nanum Myeongjo',serif;color:#000;position:relative">
+    <div style="display:flex;justify-content:flex-end;font-size:14px;letter-spacing:2px">
+      <span>제 ${d.number} 호</span>
+    </div>
+    <div style="text-align:center;font-size:38px;font-weight:700;margin:80px 0 60px;letter-spacing:24px">${d.type.split('').join(' ')}</div>
+    <table style="margin:20px auto;font-size:17px;line-height:2.6;border-collapse:collapse;width:88%">
+      <tr>
+        <td style="width:100px;text-align:center;font-weight:600">성 명</td>
+        <td style="width:200px;border-bottom:1px solid #333;padding:0 12px">${d.name}</td>
+        <td style="width:100px;text-align:center;font-weight:600">학 번</td>
+        <td style="border-bottom:1px solid #333;padding:0 12px">${d.studentId}</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:600">생 년 월 일</td>
+        <td colspan="3" style="border-bottom:1px solid #333;padding:0 12px">${d.birthday}</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:600">수 강 반</td>
+        <td colspan="3" style="border-bottom:1px solid #333;padding:0 12px">${d.course}</td>
+      </tr>
+      <tr>
+        <td style="text-align:center;font-weight:600">수 업 기 간</td>
+        <td colspan="3" style="border-bottom:1px solid #333;padding:0 12px">
+          <span>${d.periodStart}</span> <span style="margin:0 8px;color:#555">부터</span> <span>${d.periodEnd}</span> <span style="margin:0 8px;color:#555">까지</span>
+        </td>
+      </tr>
+    </table>
+    <div style="text-align:center;font-size:19px;margin:80px 0;letter-spacing:1px">${d.certText}</div>
+    <table style="margin:60px auto 40px;font-size:17px;line-height:2.4;width:88%">
+      <tr>
+        <td style="width:100px;text-align:center;font-weight:600">용 도</td>
+        <td style="border-bottom:1px solid #333;padding:0 12px">${d.purpose}</td>
+      </tr>
+    </table>
+    <div style="text-align:center;font-size:19px;margin:40px 0 20px;letter-spacing:2px">${d.issuedDate}</div>
+    <div style="text-align:right;margin-top:40px;line-height:1.9">
+      <div style="font-size:15px">경기도 이천시 마장면 서이천로337번길 55</div>
+      <div style="font-size:20px;font-weight:700;margin-top:6px">강남대성기숙 퀘타(QUETTA) 학원장 <span style="display:inline-block;width:70px;height:70px;border:2px solid #c00;border-radius:50%;color:#c00;font-size:14px;text-align:center;line-height:66px;font-weight:700;margin-left:10px;vertical-align:middle">[직인]</span></div>
+    </div>
+  </div>`;
+}
+
+// 발급자 이름 로컬 저장
+function certSaveIssuer() {
+  const name = $('certIssuer').value.trim();
+  if (name) localStorage.setItem(CERT_ISSUER_KEY, name);
+}
+window.certSaveIssuerLive = certSaveIssuer;
+
+// 단건 발급
+window.certIssue = async () => {
+  const type = $('certType').value;
+  const sid = $('certStudentId').value.trim();
+  const stu = students.find(s => String(s.studentId) === sid);
+  if (!stu) return toast('학번을 확인해주세요.', true);
+  const bday = $('certBirthday').value.trim();
+  if (!bday) return toast('생년월일을 입력해주세요.', true);
+  const courseName = $('certCourse').value;
+  if (!courseName) return toast('과정을 선택해주세요.', true);
+  const purpose = $('certPurpose').value.trim();
+  if (!purpose) return toast('용도를 입력해주세요.', true);
+  const issuer = $('certIssuer').value.trim();
+  if (!issuer) return toast('발급자 이름을 입력해주세요.', true);
+
+  await certIssueOne(stu, type, bday, courseName, purpose, issuer);
+};
+
+// 실제 발급 로직 (단건, 일괄에서도 재사용)
+async function certIssueOne(stu, type, bday, courseName, purpose, issuer) {
+  const course = CERT_COURSES.find(c => c.name === courseName);
+  const cls = classes.find(c => c.id === stu.classId);
+  try {
+    // 1) 트랜잭션으로 채번
+    const number = await runTransaction(db, async (t) => {
+      const cRef = doc(db, 'certConfig', 'counter');
+      const cSnap = await t.get(cRef);
+      const year = new Date().getFullYear();
+      const data = cSnap.exists() ? cSnap.data() : {};
+      const cur = (data.year === year) ? (data.last || 33) : 33;
+      const next = cur + 1;
+      t.set(cRef, { last: next, year, updatedAt: serverTimestamp() });
+      return `${year}-${next}(교)`;
+    });
+
+    // 2) 학생 생년월일 저장 (없었으면)
+    if (!stu.birthday || stu.birthday !== bday) {
+      await updateDoc(doc(db,'students',stu.id), { birthday: bday, updatedAt: serverTimestamp() });
+      stu.birthday = bday;
+    }
+
+    // 3) PDF 생성용 HTML 렌더링 → html2canvas → jsPDF
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+    const html = renderCertHTML({
+      number, type,
+      name: stu.name,
+      studentId: stu.studentId,
+      birthday: bday,
+      className: cls?.name || '',
+      course: courseName,
+      periodStart: course.start,
+      periodEnd: course.end,
+      purpose,
+      issuedDate: todayStr,
+      certText: CERT_TEXTS[type],
+    });
+    $('certPdfContainer').innerHTML = html;
+    // html2canvas
+    const canvas = await html2canvas($('certPdfContainer').firstElementChild, {scale:2, backgroundColor:'#fff'});
+    const imgData = canvas.toDataURL('image/png');
+    // A4: 210x297mm
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+    pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+    const fname = `${stu.studentId}_${stu.name}_${type}_${number}.pdf`;
+    pdf.save(fname);
+    $('certPdfContainer').innerHTML = '';
+
+    // 4) 이력 저장
+    const record = {
+      number, type,
+      studentId: stu.studentId,
+      studentName: stu.name,
+      className: cls?.name || '',
+      birthday: bday,
+      course: courseName,
+      periodStart: course.start,
+      periodEnd: course.end,
+      purpose,
+      issuer,
+      issuedAt: serverTimestamp(),
+    };
+    const ref = await addDoc(collection(db,'certificates'), record);
+    certificates.unshift({id: ref.id, ...record, issuedAt: new Date()});
+
+    // 발급자 저장
+    certSaveIssuer();
+
+    // 미리보기 갱신 (다음 번호 반영)
+    certUpdatePreview();
+    toast(`${number} 발급 완료`);
+    return number;
+  } catch (e) {
+    console.error('certIssue error:', e);
+    toast('발급 실패: ' + e.message, true);
+    throw e;
+  }
+}
+
+// 일괄 발급
+window.certBulkIssue = async () => {
+  const type = $('certType').value;
+  const courseName = $('certCourse').value;
+  const purpose = $('certPurpose').value.trim();
+  const issuer = $('certIssuer').value.trim();
+  if (!courseName || !purpose || !issuer) return toast('종류·과정·용도·발급자를 먼저 입력하세요.', true);
+  const ids = $('certBulkIds').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  if (!ids.length) return toast('학번을 입력하세요.', true);
+
+  let ok = 0, skip = 0, err = 0;
+  const skipList = [];
+  if (!confirm(`${ids.length}건 순차 발급을 시작합니다. 생년월일 미등록 학생은 건너뜁니다.\n진행할까요?`)) return;
+
+  for (const sid of ids) {
+    const stu = students.find(s => String(s.studentId) === sid);
+    if (!stu) { skip++; skipList.push(`${sid} (학번 미등록)`); continue; }
+    if (!stu.birthday) { skip++; skipList.push(`${sid} ${stu.name} (생년월일 미등록)`); continue; }
+    try {
+      await certIssueOne(stu, type, stu.birthday, courseName, purpose, issuer);
+      ok++;
+    } catch (e) { err++; }
+  }
+  toast(`일괄 발급 완료: 성공 ${ok} / 건너뜀 ${skip} / 실패 ${err}`);
+  if (skipList.length) console.log('건너뛴 학생:', skipList);
+};
+
+window.certReset = () => {
+  $('certStudentId').value = '';
+  $('certBirthday').value = '';
+  $('certCourse').value = '';
+  $('certPurpose').value = '';
+  $('certStudentInfo').textContent = '';
+  $('certBirthdayNote').textContent = '';
+  $('certBulkIds').value = '';
+  certUpdatePreview();
+};
+
+// 이력 렌더링
+function renderCertHistory() {
+  const q = ($('certSearch')?.value || '').trim().toLowerCase();
+  let list = certificates.slice();
+  if (q) list = list.filter(c =>
+    (c.number||'').toLowerCase().includes(q) ||
+    (c.studentId||'').toLowerCase().includes(q) ||
+    (c.studentName||'').toLowerCase().includes(q));
+  if (!list.length) {
+    $('certHistoryBody').innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--t3);padding:30px">발급 이력이 없습니다.</td></tr>`;
+    return;
+  }
+  $('certHistoryBody').innerHTML = list.map(c => {
+    const at = c.issuedAt?.toDate ? c.issuedAt.toDate() : (c.issuedAt || new Date());
+    const dateStr = at instanceof Date ? at.toLocaleDateString('ko') : '';
+    return `<tr>
+      <td><strong>${c.number||''}</strong></td>
+      <td>${dateStr}</td>
+      <td>${c.type||''}</td>
+      <td>${c.studentId||''}</td>
+      <td>${c.studentName||''}</td>
+      <td style="font-size:12px">${c.course||''}</td>
+      <td>${c.purpose||''}</td>
+      <td>${c.issuer||''}</td>
+    </tr>`;
+  }).join('');
+}
+
+// 이력 엑셀 내보내기
+window.exportCertHistory = () => {
+  const q = ($('certSearch')?.value || '').trim().toLowerCase();
+  let list = certificates.slice();
+  if (q) list = list.filter(c =>
+    (c.number||'').toLowerCase().includes(q) ||
+    (c.studentId||'').toLowerCase().includes(q) ||
+    (c.studentName||'').toLowerCase().includes(q));
+  const rows = [['증명서번호','발급일','종류','학번','성명','반','생년월일','과정','수업기간','용도','발급자']];
+  list.forEach(c => {
+    const at = c.issuedAt?.toDate ? c.issuedAt.toDate() : c.issuedAt;
+    const dateStr = at ? new Date(at).toLocaleDateString('ko') : '';
+    rows.push([
+      c.number||'', dateStr, c.type||'',
+      c.studentId||'', c.studentName||'', c.className||'',
+      c.birthday||'', c.course||'',
+      (c.periodStart && c.periodEnd) ? `${c.periodStart} ~ ${c.periodEnd}` : '',
+      c.purpose||'', c.issuer||''
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:14},{wch:12},{wch:12},{wch:8},{wch:10},{wch:8},{wch:12},{wch:20},{wch:24},{wch:20},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '증명서 이력');
+  const today = new Date();
+  const fname = `QUETTA_증명서이력_${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb, fname);
+  toast(`엑셀 다운로드 완료 (${list.length}건)`);
+};
+
+// 생년월일 일괄 임포트 헬퍼 (콘솔에서 호출)
+// mappings: [{ studentId: '5435', birthday: '2005-03-15' }, ...]
+window.__importBirthdays = async (mappings) => {
+  if (!Array.isArray(mappings) || !mappings.length) {
+    console.error('❌ mappings 배열이 비어있습니다.');
+    return;
+  }
+  console.log(`%c[생년월일 일괄 임포트] ${mappings.length}건 시작`, 'color:#00B2BE;font-weight:bold');
+  const notFound = [], errors = [];
+  let ok = 0;
+  const CHUNK = 10;
+  for (let i = 0; i < mappings.length; i += CHUNK) {
+    const batch = mappings.slice(i, i + CHUNK);
+    await Promise.all(batch.map(async m => {
+      const stu = students.find(s => String(s.studentId) === String(m.studentId));
+      if (!stu) { notFound.push(m); return; }
+      try {
+        await updateDoc(doc(db,'students',stu.id), { birthday: m.birthday, updatedAt: serverTimestamp() });
+        stu.birthday = m.birthday;
+        ok++;
+      } catch (e) { errors.push({...m, error: e.message}); }
+    }));
+    console.log(`  진행: ${Math.min(i+CHUNK, mappings.length)} / ${mappings.length} (성공 ${ok}, 미매칭 ${notFound.length}, 에러 ${errors.length})`);
+  }
+  console.log(`%c[완료] 성공 ${ok} / 미매칭 ${notFound.length} / 에러 ${errors.length}`, 'color:#00B2BE;font-weight:bold');
+  if (notFound.length) console.table(notFound);
+  if (errors.length) console.table(errors);
+  return { ok, notFound: notFound.length, errors: errors.length };
+};
 
 </script>
 </body>
