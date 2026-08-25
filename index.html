@@ -3403,46 +3403,52 @@ function certNextNumberPreview() {
   return `${year}-${last+1}(교)`;
 }
 
-// 증명서 HTML 생성 (A4 세로, 794x1123px)
+// 증명서 HTML 생성 (A4 세로, 794x1123px) - 원본 스프레드시트 양식
 function renderCertHTML(d) {
-  return `<div style="width:794px;height:1123px;background:#fff;padding:100px 80px 60px;box-sizing:border-box;font-family:'Noto Serif KR','Nanum Myeongjo',serif;color:#000;position:relative">
-    <div style="display:flex;justify-content:flex-end;font-size:14px;letter-spacing:2px">
-      <span>제 ${d.number} 호</span>
+  return `<div style="width:794px;height:1123px;background:#fff;padding:60px 80px;box-sizing:border-box;font-family:'Noto Serif KR','Nanum Myeongjo',serif;color:#000;position:relative">
+    <!-- 증명서 번호 (좌측 상단) -->
+    <div style="font-size:14px;letter-spacing:1px">제 ${d.number} 호</div>
+
+    <!-- 제목 -->
+    <div style="text-align:center;font-size:44px;font-weight:700;margin:80px 0 90px;letter-spacing:24px">${d.type.split('').join(' ')}</div>
+
+    <!-- 정보 블록 (좌측 정렬) -->
+    <div style="padding:0 40px;font-size:19px;line-height:1.6">
+      <table style="border-collapse:collapse;width:100%">
+        <tr>
+          <td style="width:130px;padding:14px 0">성  명 <span style="margin:0 10px">:</span></td>
+          <td style="width:250px">${d.name}</td>
+          <td style="width:100px">학  번 <span style="margin:0 10px">:</span></td>
+          <td>${d.studentId}</td>
+        </tr>
+        <tr>
+          <td style="padding:14px 0">생년월일 <span style="margin:0 10px">:</span></td>
+          <td colspan="3">${d.birthday}</td>
+        </tr>
+        <tr>
+          <td style="padding:14px 0">수 강 반 <span style="margin:0 10px">:</span></td>
+          <td colspan="3">${d.course}</td>
+        </tr>
+        <tr>
+          <td style="padding:14px 0">수업기간 <span style="margin:0 10px">:</span></td>
+          <td colspan="3">${d.periodStart} <span style="margin:0 8px">부터</span> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ${d.periodEnd} <span style="margin:0 8px">까지</span></td>
+        </tr>
+      </table>
     </div>
-    <div style="text-align:center;font-size:38px;font-weight:700;margin:80px 0 60px;letter-spacing:24px">${d.type.split('').join(' ')}</div>
-    <table style="margin:20px auto;font-size:17px;line-height:2.6;border-collapse:collapse;width:88%">
-      <tr>
-        <td style="width:100px;text-align:center;font-weight:600">성 명</td>
-        <td style="width:200px;border-bottom:1px solid #333;padding:0 12px">${d.name}</td>
-        <td style="width:100px;text-align:center;font-weight:600">학 번</td>
-        <td style="border-bottom:1px solid #333;padding:0 12px">${d.studentId}</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:600">생 년 월 일</td>
-        <td colspan="3" style="border-bottom:1px solid #333;padding:0 12px">${d.birthday}</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:600">수 강 반</td>
-        <td colspan="3" style="border-bottom:1px solid #333;padding:0 12px">${d.course}</td>
-      </tr>
-      <tr>
-        <td style="text-align:center;font-weight:600">수 업 기 간</td>
-        <td colspan="3" style="border-bottom:1px solid #333;padding:0 12px">
-          <span>${d.periodStart}</span> <span style="margin:0 8px;color:#555">부터</span> <span>${d.periodEnd}</span> <span style="margin:0 8px;color:#555">까지</span>
-        </td>
-      </tr>
-    </table>
-    <div style="text-align:center;font-size:19px;margin:80px 0;letter-spacing:1px">${d.certText}</div>
-    <table style="margin:60px auto 40px;font-size:17px;line-height:2.4;width:88%">
-      <tr>
-        <td style="width:100px;text-align:center;font-weight:600">용 도</td>
-        <td style="border-bottom:1px solid #333;padding:0 12px">${d.purpose}</td>
-      </tr>
-    </table>
-    <div style="text-align:center;font-size:19px;margin:40px 0 20px;letter-spacing:2px">${d.issuedDate}</div>
-    <div style="text-align:right;margin-top:40px;line-height:1.9">
-      <div style="font-size:15px">경기도 이천시 마장면 서이천로337번길 55</div>
-      <div style="font-size:20px;font-weight:700;margin-top:6px">강남대성기숙 퀘타(QUETTA) 학원장<img src="${SEAL_URL}" style="display:inline-block;width:110px;height:110px;object-fit:contain;margin-left:-20px;vertical-align:middle;position:relative;z-index:1" onerror="this.outerHTML='<span style=&quot;display:inline-block;width:90px;height:90px;border:2px solid #c00;border-radius:50%;color:#c00;font-size:14px;text-align:center;line-height:86px;font-weight:700;margin-left:-15px;vertical-align:middle&quot;>[직인]</span>'"></div>
+
+    <!-- 증명 문구 (가운데) -->
+    <div style="text-align:center;font-size:21px;margin:100px 0;letter-spacing:1px">${d.certText}</div>
+
+    <!-- 용도 (좌측 정렬) -->
+    <div style="padding:0 40px;font-size:19px;margin:40px 0">용도 <span style="margin:0 10px">:</span> ${d.purpose}</div>
+
+    <!-- 발급일자 (가운데) -->
+    <div style="text-align:center;font-size:21px;margin:70px 0 50px;letter-spacing:2px">${d.issuedDate}</div>
+
+    <!-- 주소 & 학원장 (우측 정렬) -->
+    <div style="text-align:right;padding-right:60px;line-height:2">
+      <div style="font-size:16px">경기도 이천시 마장면 서이천로337번길 55</div>
+      <div style="font-size:22px;font-weight:700;margin-top:6px">강남대성기숙 퀘타(QUETTA) 학원장<img src="${SEAL_URL}" style="display:inline-block;width:110px;height:110px;object-fit:contain;margin-left:-20px;vertical-align:middle;position:relative;z-index:1" onerror="this.outerHTML='<span style=&quot;display:inline-block;width:90px;height:90px;border:2px solid #c00;border-radius:50%;color:#c00;font-size:14px;text-align:center;line-height:86px;font-weight:700;margin-left:-15px;vertical-align:middle&quot;>[직인]</span>'"></div>
     </div>
   </div>`;
 }
