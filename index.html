@@ -757,7 +757,7 @@ th:hover .sort-ind{opacity:1}
             <div class="card-body" style="display:grid;gap:14px">
               <div class="fg">
                 <label>증명서 종류</label>
-                <select id="certType" onchange="certUpdatePreview()">
+                <select id="certType" onchange="certUpdatePreview();certTogglePeriodOverride()">
                   <option value="재원증명서">재원증명서</option>
                   <option value="수강확인서">수강확인서</option>
                   <option value="졸업증명서">졸업증명서</option>
@@ -778,7 +778,15 @@ th:hover .sort-ind{opacity:1}
               </div>
               <div class="fg">
                 <label>과정 (수강반)</label>
-                <select id="certCourse" onchange="certUpdatePreview()"></select>
+                <select id="certCourse" onchange="certUpdatePreview();certAutoFillDates()"></select>
+              </div>
+              <div class="fg" id="certPeriodOverrideBox" style="display:none">
+                <label>수업기간 <span style="font-size:12px;color:var(--t3);font-weight:400">(수강확인서용, 과정 선택 시 자동 채움. 원하면 직접 수정)</span></label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input type="date" id="certPeriodStart" oninput="certUpdatePreview()" style="flex:1">
+                  <span>~</span>
+                  <input type="date" id="certPeriodEnd" oninput="certUpdatePreview()" style="flex:1">
+                </div>
               </div>
               <div class="fg">
                 <label>용도</label>
@@ -813,6 +821,11 @@ th:hover .sort-ind{opacity:1}
                     Apps Script 웹앱 배포 URL을 입력하세요.
                   </div>
                   <div class="fg" style="margin:0"><label>Apps Script 웹앱 URL</label><input type="text" id="ejsAppsScriptUrl" placeholder="https://script.google.com/macros/s/AKfyc.../exec"></div>
+                  <div class="fg" style="margin:0"><label>이메일 제목 템플릿</label><input type="text" id="ejsSubjectTpl" placeholder="[강남대성기숙 QUETTA] {종류} 발송 안내 ({학생명})"></div>
+                  <div class="fg" style="margin:0">
+                    <label>이메일 본문 템플릿 <span style="font-size:12px;color:var(--t3);font-weight:400">플레이스홀더: {학생명} {학번} {반} {종류} {번호} {과정} {수업기간} {용도} {발급일} {첨부형식}</span></label>
+                    <textarea id="ejsBodyTpl" rows="10" style="width:100%;padding:8px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:13px;resize:vertical"></textarea>
+                  </div>
                   <hr style="border:none;border-top:1px solid var(--warm2);margin:6px 0">
                   <div style="font-size:12px;color:var(--t3)">
                     <strong>그룹웨어 (반자동 발송용)</strong> — 증명서 단건 발송을 그룹웨어로 직접 하고 싶을 때 사용됩니다.
@@ -833,6 +846,26 @@ th:hover .sort-ind{opacity:1}
                     <button class="btn btn-ghost btn-sm" onclick="testAppsScript()">🔌 Apps Script 연결 테스트</button>
                   </div>
                   <div id="emailConfigStatus" style="font-size:12px;color:var(--t3)"></div>
+                </div>
+              </details>
+              <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-size:13px;color:var(--t2)">🎓 과정 관리 (관리자)</summary>
+                <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px;display:grid;gap:10px">
+                  <div style="font-size:12px;color:var(--t3)">
+                    과정 목록을 관리합니다. 여기 등록된 과정만 발급 폼에 표시됩니다.
+                  </div>
+                  <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:6px;align-items:end">
+                    <div class="fg" style="margin:0"><label style="font-size:11px">과정 이름</label><input type="text" id="newCourseName" placeholder="예: 2027 N수 정규시즌"></div>
+                    <div class="fg" style="margin:0"><label style="font-size:11px">시작일</label><input type="date" id="newCourseStart"></div>
+                    <div class="fg" style="margin:0"><label style="font-size:11px">종료일</label><input type="date" id="newCourseEnd"></div>
+                    <button class="btn btn-gold btn-sm" onclick="addCertCourse()">➕ 추가</button>
+                  </div>
+                  <div style="max-height:200px;overflow-y:auto">
+                    <table class="tbl" style="margin-top:6px">
+                      <thead><tr><th>과정 이름</th><th>시작일</th><th>종료일</th><th class="center">삭제</th></tr></thead>
+                      <tbody id="courseListBody"></tbody>
+                    </table>
+                  </div>
                 </div>
               </details>
               <details style="margin-top:8px">
@@ -3523,6 +3556,125 @@ const CERT_COURSES = [
   { name: '2026 N수 정규시즌', start: '2026. 2. 20', end: '2026. 11. 19' },
 ];
 
+// 런타임 과정 목록 (Firestore에서 로드, 기본값은 CERT_COURSES)
+let certCourses = CERT_COURSES.slice();
+
+// 과정 로드
+async function loadCertCourses() {
+  try {
+    const snap = await getDoc(doc(db, 'certConfig', 'courses'));
+    if (snap.exists() && Array.isArray(snap.data().list) && snap.data().list.length) {
+      certCourses = snap.data().list;
+    } else {
+      certCourses = CERT_COURSES.slice();
+    }
+  } catch (e) {
+    console.warn('[loadCertCourses]', e);
+    certCourses = CERT_COURSES.slice();
+  }
+  renderCertCourseDropdown();
+  renderCourseListUI();
+}
+
+// 드롭다운 갱신
+function renderCertCourseDropdown() {
+  const sel = $('certCourse');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— 선택 —</option>' +
+    certCourses.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+
+// 과정 관리 리스트 렌더링
+function renderCourseListUI() {
+  const el = $('courseListBody');
+  if (!el) return;
+  if (!certCourses.length) {
+    el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--t3);padding:20px">등록된 과정이 없습니다.</td></tr>';
+    return;
+  }
+  el.innerHTML = certCourses.map((c, i) => `<tr>
+    <td>${c.name}</td>
+    <td>${c.start}</td>
+    <td>${c.end}</td>
+    <td class="center"><button class="btn btn-ghost btn-sm" onclick="deleteCertCourse(${i})" title="삭제">🗑</button></td>
+  </tr>`).join('');
+}
+
+// 과정 추가
+window.addCertCourse = async () => {
+  const name = $('newCourseName').value.trim();
+  const start = $('newCourseStart').value.trim();
+  const end = $('newCourseEnd').value.trim();
+  if (!name) return toast('과정 이름을 입력하세요.', true);
+  if (!start || !end) return toast('시작일과 종료일을 입력하세요.', true);
+  if (certCourses.some(c => c.name === name)) return toast('같은 이름의 과정이 이미 있습니다.', true);
+  // YYYY-MM-DD → "YYYY. M. D" 포맷 변환
+  const fmtDate = (d) => {
+    const [y,m,dd] = d.split('-');
+    return `${y}. ${parseInt(m)}. ${parseInt(dd)}`;
+  };
+  certCourses.push({ name, start: fmtDate(start), end: fmtDate(end) });
+  try {
+    await setDoc(doc(db, 'certConfig', 'courses'), { list: certCourses, updatedAt: serverTimestamp() });
+    $('newCourseName').value = '';
+    $('newCourseStart').value = '';
+    $('newCourseEnd').value = '';
+    renderCertCourseDropdown();
+    renderCourseListUI();
+    toast(`과정 "${name}" 추가됨`);
+  } catch (e) {
+    toast('저장 실패: ' + e.message, true);
+  }
+};
+
+// 과정 삭제
+window.deleteCertCourse = async (idx) => {
+  const c = certCourses[idx];
+  if (!c) return;
+  if (!confirm(`"${c.name}" 과정을 삭제할까요?`)) return;
+  certCourses.splice(idx, 1);
+  try {
+    await setDoc(doc(db, 'certConfig', 'courses'), { list: certCourses, updatedAt: serverTimestamp() });
+    renderCertCourseDropdown();
+    renderCourseListUI();
+    toast('삭제 완료');
+  } catch (e) {
+    toast('삭제 실패: ' + e.message, true);
+  }
+};
+
+// 수강확인서 선택 시 날짜 필드 표시
+window.certTogglePeriodOverride = () => {
+  const type = $('certType').value;
+  const box = $('certPeriodOverrideBox');
+  if (!box) return;
+  if (type === '수강확인서') {
+    box.style.display = '';
+    certAutoFillDates();
+  } else {
+    box.style.display = 'none';
+  }
+};
+
+// 과정 선택 시 날짜 자동 채움 (수강확인서 override 필드용)
+window.certAutoFillDates = () => {
+  const box = $('certPeriodOverrideBox');
+  if (!box || box.style.display === 'none') return;
+  const courseName = $('certCourse').value;
+  const course = certCourses.find(c => c.name === courseName);
+  if (!course) return;
+  // "2026. 2. 20" → "2026-02-20" 변환
+  const toIso = (s) => {
+    const parts = s.split('.').map(x => x.trim());
+    if (parts.length !== 3) return '';
+    return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+  };
+  if (!$('certPeriodStart').value) $('certPeriodStart').value = toIso(course.start);
+  if (!$('certPeriodEnd').value) $('certPeriodEnd').value = toIso(course.end);
+};
+
 // 종류별 증명 문구
 const CERT_TEXTS = {
   '재원증명서': '위 학생은 현재 본 학원 학생임을 증명합니다.',
@@ -3537,12 +3689,8 @@ const SEAL_URL = 'seal.png'; // GitHub 저장소 루트에 seal.png 파일 배�
 let certTab = 'form'; // 'form' | 'history'
 
 function renderCert() {
-  // 과정 드롭다운 채우기 (한 번만)
-  const sel = $('certCourse');
-  if (sel && !sel.options.length) {
-    sel.innerHTML = '<option value="">— 선택 —</option>' +
-      CERT_COURSES.map(c=>`<option value="${c.name}">${c.name}</option>`).join('');
-  }
+  // 과정 목록 로드 (Firestore + 드롭다운 채우기)
+  loadCertCourses();
   // 저장된 발급자 이름 복원
   if ($('certIssuer') && !$('certIssuer').value) {
     const saved = localStorage.getItem(CERT_ISSUER_KEY);
@@ -3606,13 +3754,22 @@ window.certUpdatePreview = () => {
   const stu  = students.find(s => String(s.studentId) === sid);
   const bday = $('certBirthday').value.trim();
   const courseName = $('certCourse').value;
-  const course = CERT_COURSES.find(c => c.name === courseName);
+  const course = certCourses.find(c => c.name === courseName);
   const purpose = $('certPurpose').value.trim();
   const cls = stu ? classes.find(c => c.id === stu.classId) : null;
   const today = new Date();
   const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
   const year = today.getFullYear();
   const nextNum = certNextNumberPreview();
+  // 수강확인서일 때 override 날짜 사용
+  let pStart = course?.start || '________';
+  let pEnd = course?.end || '________';
+  if (type === '수강확인서') {
+    const ovStart = $('certPeriodStart')?.value;
+    const ovEnd = $('certPeriodEnd')?.value;
+    if (ovStart) pStart = ovStart.replace(/-0?/g, '. ').replace(/^\. /, '') + ''; // "2026-08-01" → "2026. 8. 1"
+    if (ovEnd) pEnd = ovEnd.replace(/-0?/g, '. ').replace(/^\. /, '') + '';
+  }
   const html = renderCertHTML({
     number: nextNum,
     type,
@@ -3621,8 +3778,8 @@ window.certUpdatePreview = () => {
     birthday: bday || '________',
     className: cls?.name || courseName || '________',
     course: courseName || '________',
-    periodStart: course?.start || '________',
-    periodEnd: course?.end || '________',
+    periodStart: pStart,
+    periodEnd: pEnd,
     purpose: purpose || '________',
     issuedDate: todayStr,
     certText: CERT_TEXTS[type] || '',
@@ -3719,7 +3876,15 @@ window.certIssue = async (mode = 'pdf') => {
   }
   const format = document.querySelector('input[name="certAttachFormat"]:checked')?.value || 'pdf';
 
-  await certIssueOne(stu, type, bday, courseName, purpose, issuer, mode, toEmail, format);
+  let periodOverride = null;
+  if (type === '수강확인서') {
+    const ovStart = $('certPeriodStart').value;
+    const ovEnd = $('certPeriodEnd').value;
+    const toKor = (s) => { const [y,m,d] = s.split('-'); return `${y}. ${parseInt(m)}. ${parseInt(d)}`; };
+    if (ovStart && ovEnd) periodOverride = { start: toKor(ovStart), end: toKor(ovEnd) };
+  }
+
+  await certIssueOne(stu, type, bday, courseName, purpose, issuer, mode, toEmail, format, periodOverride);
 };
 
 // 실제 발급 로직 (단건, 일괄에서도 재사용)
@@ -3774,8 +3939,8 @@ async function certOutputPrint(html, meta) {
   printWindow.document.close();
 }
 
-async function certIssueOne(stu, type, bday, courseName, purpose, issuer, mode = 'pdf', toEmail = null, attachFormat = 'pdf') {
-  const course = CERT_COURSES.find(c => c.name === courseName);
+async function certIssueOne(stu, type, bday, courseName, purpose, issuer, mode = 'pdf', toEmail = null, attachFormat = 'pdf', periodOverride = null) {
+  const course = certCourses.find(c => c.name === courseName);
   const cls = classes.find(c => c.id === stu.classId);
   try {
     // 1) 트랜잭션으로 채번
@@ -3796,9 +3961,11 @@ async function certIssueOne(stu, type, bday, courseName, purpose, issuer, mode =
       stu.birthday = bday;
     }
 
-    // 3) HTML 생성
+    // 3) HTML 생성 (수강확인서는 override 날짜 사용 가능)
     const today = new Date();
     const todayStr = `${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일`;
+    const periodStart = (type === '수강확인서' && periodOverride?.start) ? periodOverride.start : course.start;
+    const periodEnd = (type === '수강확인서' && periodOverride?.end) ? periodOverride.end : course.end;
     const certData = {
       number, type,
       name: stu.name,
@@ -3806,8 +3973,8 @@ async function certIssueOne(stu, type, bday, courseName, purpose, issuer, mode =
       birthday: bday,
       className: cls?.name || '',
       course: courseName,
-      periodStart: course.start,
-      periodEnd: course.end,
+      periodStart,
+      periodEnd,
       purpose,
       issuedDate: todayStr,
       certText: CERT_TEXTS[type],
@@ -3842,22 +4009,18 @@ async function certIssueOne(stu, type, bday, courseName, purpose, issuer, mode =
       }
 
       // Apps Script로 전송
-      const subject = `[강남대성기숙 QUETTA] ${type} 발송 안내 (${stu.name})`;
-      const body = `안녕하세요, ${stu.name} 학생/학부모님.
-강남대성기숙 QUETTA 행정실입니다.
-
-요청하신 증명서를 발송드립니다. 첨부 ${attachFormat === 'image' ? '이미지' : 'PDF'}를 확인해 주시기 바랍니다.
-
-▪ 증명서 종류: ${type}
-▪ 증명서 번호: ${number}
-▪ 발급일: ${todayStr}
-▪ 용도: ${purpose}
-
-문의사항이 있으시면 회신 주시기 바랍니다.
-감사합니다.
-
-Good Better Best
-강남대성기숙 QUETTA`;
+      const period = `${periodStart} ~ ${periodEnd}`;
+      const attachLabel = attachFormat === 'image' ? '이미지' : 'PDF';
+      const subject = fillEmailTemplate(emailConfig?.subjectTpl || DEFAULT_SUBJECT_TPL, {
+        name: stu.name, studentId: stu.studentId, className: cls?.name || '',
+        type, number, course: courseName, period,
+        purpose, issuedDate: todayStr, attachLabel,
+      });
+      const body = fillEmailTemplate(emailConfig?.bodyTpl || DEFAULT_BODY_TPL, {
+        name: stu.name, studentId: stu.studentId, className: cls?.name || '',
+        type, number, course: courseName, period,
+        purpose, issuedDate: todayStr, attachLabel,
+      });
       await sendEmailViaAppsScript({
         toEmail, subject, body,
         attachmentName, attachmentBase64,
@@ -3885,8 +4048,8 @@ Good Better Best
       className: cls?.name || '',
       birthday: bday,
       course: courseName,
-      periodStart: course.start,
-      periodEnd: course.end,
+      periodStart,
+      periodEnd,
       purpose,
       issuer,
       issuedAt: serverTimestamp(),
@@ -4009,11 +4172,19 @@ window.certBulkIssue = async (mode = 'pdf') => {
     if (!stu) return { sid, status: 'no-student', label: `${sid} — 학번 미등록` };
     if (!stu.birthday) return { sid, stu, status: 'no-birthday', label: `${sid} ${stu.name} — 생년월일 미등록` };
     if (mode === 'email' && !emailMap[sid]) return { sid, stu, status: 'no-email', label: `${sid} ${stu.name} — 이메일 미등록` };
+    // 이미 발급 이력 있는지 확인 (같은 학번 + 같은 종류)
+    const prevIssues = certificates.filter(c => String(c.studentId) === sid && c.type === type);
     const email = mode === 'email' ? emailMap[sid] : null;
-    return { sid, stu, email, status: 'ok', label: `${sid} ${stu.name}${email ? ' → ' + email : ''}` };
+    let label = `${sid} ${stu.name}${email ? ' → ' + email : ''}`;
+    if (prevIssues.length > 0) {
+      const lastNum = prevIssues[0]?.number || '';
+      label += ` ⚠️ 이미 발급됨 (${prevIssues.length}회, 최근: ${lastNum})`;
+    }
+    return { sid, stu, email, status: 'ok', label, prevCount: prevIssues.length };
   });
 
   const okList = preFlight.filter(p => p.status === 'ok');
+  const alreadyIssued = okList.filter(p => (p.prevCount || 0) > 0);
   const noStudent = preFlight.filter(p => p.status === 'no-student');
   const noBirthday = preFlight.filter(p => p.status === 'no-birthday');
   const noEmail = preFlight.filter(p => p.status === 'no-email');
@@ -4023,7 +4194,9 @@ window.certBulkIssue = async (mode = 'pdf') => {
   // 확인 다이얼로그: 카테고리별 요약 + 상세 리스트
   let msg = `📧 일괄 ${modeLabel} — 발송 전 확인\n\n`;
   msg += `총 ${ids.length}건 중:\n`;
-  msg += `✅ 발송 가능: ${okList.length}건\n`;
+  msg += `✅ 발송 가능: ${okList.length}건`;
+  if (alreadyIssued.length > 0) msg += ` (그 중 이미 발급 이력 있음: ${alreadyIssued.length}건)`;
+  msg += `\n`;
   if (noEmail.length) msg += `❌ 이메일 미등록: ${noEmail.length}건\n`;
   if (noBirthday.length) msg += `❌ 생년월일 미등록: ${noBirthday.length}건\n`;
   if (noStudent.length) msg += `❌ 학번 미등록: ${noStudent.length}건\n`;
@@ -4037,6 +4210,14 @@ window.certBulkIssue = async (mode = 'pdf') => {
     if (skippedAll.length > 15) msg += `\n  ... 외 ${skippedAll.length - 15}건 (콘솔 확인)`;
   }
 
+  // 이미 발급된 학생 상세도 표시 (경고)
+  if (alreadyIssued.length > 0) {
+    msg += `\n\n⚠️ 이미 발급 이력이 있는 학생 (${alreadyIssued.length}건):\n`;
+    const showFirst = alreadyIssued.slice(0, 10);
+    msg += showFirst.map(p => `  · ${p.label}`).join('\n');
+    if (alreadyIssued.length > 10) msg += `\n  ... 외 ${alreadyIssued.length - 10}건 (콘솔 확인)`;
+  }
+
   msg += `\n\n발송 가능한 ${okList.length}건에 대해 진행할까요?`;
 
   if (okList.length === 0) {
@@ -4046,15 +4227,25 @@ window.certBulkIssue = async (mode = 'pdf') => {
 
   // 전체 스킵 리스트 콘솔에 미리 출력
   if (skippedAll.length) console.log('[일괄 발급 - 스킵 상세]', skippedAll.map(p => p.label));
+  if (alreadyIssued.length) console.log('[일괄 발급 - 이미 발급 이력]', alreadyIssued.map(p => p.label));
 
   if (!confirm(msg)) return;
+
+  // 수강확인서 override 날짜 (일괄에도 동일 적용)
+  let periodOverride = null;
+  if (type === '수강확인서') {
+    const ovStart = $('certPeriodStart').value;
+    const ovEnd = $('certPeriodEnd').value;
+    const toKor = (s) => { const [y,m,d] = s.split('-'); return `${y}. ${parseInt(m)}. ${parseInt(d)}`; };
+    if (ovStart && ovEnd) periodOverride = { start: toKor(ovStart), end: toKor(ovEnd) };
+  }
 
   // 실제 발송
   let ok = 0, err = 0;
   const errList = [];
   for (const p of okList) {
     try {
-      await certIssueOne(p.stu, type, p.stu.birthday, courseName, purpose, issuer, mode, p.email, format);
+      await certIssueOne(p.stu, type, p.stu.birthday, courseName, purpose, issuer, mode, p.email, format, periodOverride);
       ok++;
       if (mode === 'email') await new Promise(r => setTimeout(r, 500));
     } catch (e) {
@@ -4216,8 +4407,41 @@ window.__importBirthdays = async (mappings) => {
 // 이메일 발송 (그룹웨어 반자동 - 복사·붙여넣기 방식)
 // ============================================================
 
-let emailConfig = null; // { mailUrl, sheetUrl, idColumn, emailColumn }
+let emailConfig = null; // { appsScriptUrl, subjectTpl, bodyTpl, mailUrl, sheetUrl, idColumn, emailColumn }
 let sheetEmailCache = null; // { studentId: email } 캐시
+
+// 기본 이메일 템플릿
+const DEFAULT_SUBJECT_TPL = '[강남대성기숙 QUETTA] {종류} 발송 안내 ({학생명})';
+const DEFAULT_BODY_TPL = `안녕하세요, {학생명} 학생/학부모님.
+강남대성기숙 QUETTA 행정실입니다.
+
+요청하신 증명서를 발송드립니다. 첨부 {첨부형식}를 확인해 주시기 바랍니다.
+
+▪ 증명서 종류: {종류}
+▪ 증명서 번호: {번호}
+▪ 발급일: {발급일}
+▪ 용도: {용도}
+
+문의사항이 있으시면 회신 주시기 바랍니다.
+감사합니다.
+
+Good Better Best
+강남대성기숙 QUETTA`;
+
+// 템플릿 플레이스홀더 치환 헬퍼
+function fillEmailTemplate(tpl, data) {
+  return (tpl || '')
+    .replace(/\{학생명\}/g, data.name || '')
+    .replace(/\{학번\}/g, data.studentId || '')
+    .replace(/\{반\}/g, data.className || '')
+    .replace(/\{종류\}/g, data.type || '')
+    .replace(/\{번호\}/g, data.number || '')
+    .replace(/\{과정\}/g, data.course || '')
+    .replace(/\{수업기간\}/g, data.period || '')
+    .replace(/\{용도\}/g, data.purpose || '')
+    .replace(/\{발급일\}/g, data.issuedDate || '')
+    .replace(/\{첨부형식\}/g, data.attachLabel || 'PDF');
+}
 
 // 설정 로드 (renderCert에서 호출)
 async function loadEmailConfig() {
@@ -4226,11 +4450,17 @@ async function loadEmailConfig() {
     emailConfig = snap.exists() ? snap.data() : null;
     if (emailConfig) {
       $('ejsAppsScriptUrl').value = emailConfig.appsScriptUrl || '';
+      $('ejsSubjectTpl').value = emailConfig.subjectTpl || DEFAULT_SUBJECT_TPL;
+      $('ejsBodyTpl').value = emailConfig.bodyTpl || DEFAULT_BODY_TPL;
       $('ejsMailUrl').value = emailConfig.mailUrl || '';
       $('ejsSheetUrl').value = emailConfig.sheetUrl || '';
       $('ejsIdCol').value = emailConfig.idColumn || '';
       $('ejsEmailCol').value = emailConfig.emailColumn || '';
       $('emailConfigStatus').innerHTML = '<span style="color:var(--g700)">✓ 설정 로드됨</span>';
+    } else {
+      // 기본 템플릿 미리 채움
+      $('ejsSubjectTpl').value = DEFAULT_SUBJECT_TPL;
+      $('ejsBodyTpl').value = DEFAULT_BODY_TPL;
     }
   } catch (e) {
     console.warn('[emailConfig] load fail:', e.message);
@@ -4240,6 +4470,8 @@ async function loadEmailConfig() {
 window.saveEmailConfig = async () => {
   const cfg = {
     appsScriptUrl: $('ejsAppsScriptUrl').value.trim(),
+    subjectTpl: $('ejsSubjectTpl').value.trim() || DEFAULT_SUBJECT_TPL,
+    bodyTpl: $('ejsBodyTpl').value || DEFAULT_BODY_TPL,
     mailUrl: $('ejsMailUrl').value.trim(),
     sheetUrl: $('ejsSheetUrl').value.trim(),
     idColumn: $('ejsIdCol').value.trim(),
@@ -4377,26 +4609,21 @@ window.testSheetLookup = async () => {
   }
 };
 
-// 이메일 제목·본문 템플릿 생성
+// 이메일 제목·본문 템플릿 생성 (모달 미리보기용, 하위호환)
 function buildEmailContent(cert) {
   const at = cert.issuedAt?.toDate ? cert.issuedAt.toDate() : new Date();
   const dateStr = `${at.getFullYear()}년 ${at.getMonth()+1}월 ${at.getDate()}일`;
-  const subject = `[강남대성기숙 QUETTA] ${cert.type} 발송 안내 (${cert.studentName})`;
-  const body = `안녕하세요, ${cert.studentName} 학생/학부모님.
-강남대성기숙 QUETTA 행정실입니다.
-
-요청하신 증명서를 발송드립니다. 첨부 PDF를 확인해 주시기 바랍니다.
-
-▪ 증명서 종류: ${cert.type}
-▪ 증명서 번호: ${cert.number}
-▪ 발급일: ${dateStr}
-▪ 용도: ${cert.purpose}
-
-문의사항이 있으시면 회신 주시기 바랍니다.
-감사합니다.
-
-Good Better Best
-강남대성기숙 QUETTA`;
+  const period = `${cert.periodStart || ''} ~ ${cert.periodEnd || ''}`;
+  const data = {
+    name: cert.studentName, studentId: cert.studentId,
+    className: cert.className || '',
+    type: cert.type, number: cert.number,
+    course: cert.course, period,
+    purpose: cert.purpose, issuedDate: dateStr,
+    attachLabel: 'PDF',
+  };
+  const subject = fillEmailTemplate(emailConfig?.subjectTpl || DEFAULT_SUBJECT_TPL, data);
+  const body = fillEmailTemplate(emailConfig?.bodyTpl || DEFAULT_BODY_TPL, data);
   return { subject, body };
 }
 
