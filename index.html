@@ -836,6 +836,32 @@ th:hover .sort-ind{opacity:1}
                 </div>
               </details>
               <details style="margin-top:8px">
+                <summary style="cursor:pointer;font-size:13px;color:var(--t2)">🔢 번호 카운터 관리 (관리자)</summary>
+                <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px;display:grid;gap:10px">
+                  <div style="font-size:12px;color:var(--t3)">
+                    다음 발급될 증명서 번호를 조정할 수 있습니다. 테스트 후 원래 번호로 되돌릴 때 사용하세요.<br>
+                    ⚠️ 신중히 사용 — 이미 발급된 번호와 겹치지 않도록 주의.
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                    <span style="font-size:13px;color:var(--t2)">현재 마지막 발급 번호:</span>
+                    <strong id="counterCurrent" style="font-size:15px;color:var(--brand-teal)">-</strong>
+                    <button class="btn btn-ghost btn-sm" onclick="loadCounterInfo()">🔄 새로고침</button>
+                  </div>
+                  <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap">
+                    <div class="fg" style="margin:0;flex:1;min-width:120px">
+                      <label>새 카운터 값 (last)</label>
+                      <input type="number" id="counterReset" placeholder="예: 33">
+                    </div>
+                    <button class="btn btn-gold btn-sm" onclick="resetCertCounter()">💾 카운터 재설정</button>
+                  </div>
+                  <div style="font-size:11px;color:var(--t3)">
+                    * "33" 입력 시 → 다음 발급 번호는 <strong>2026-34(교)</strong>부터 시작<br>
+                    * 원본 시작값: <strong>33</strong> (스프레드시트 마지막 번호 기준)
+                  </div>
+                  <div id="counterResetStatus" style="font-size:12px;color:var(--t3)"></div>
+                </div>
+              </details>
+              <details style="margin-top:8px">
                 <summary style="cursor:pointer;font-size:13px;color:var(--t2)">🚌 일괄 발급 (여러 학번)</summary>
                 <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px">
                   <div class="fg">
@@ -3525,6 +3551,8 @@ function renderCert() {
   }
   // 이메일 설정 로드
   loadEmailConfig();
+  // 카운터 정보 로드
+  loadCounterInfo();
   certSwitchTab(certTab);
 }
 
@@ -3885,6 +3913,48 @@ Good Better Best
 }
 
 // 일괄 발급
+// 카운터 조회 / 재설정 (증명서 번호)
+window.loadCounterInfo = async () => {
+  try {
+    const snap = await getDoc(doc(db, 'certConfig', 'counter'));
+    if (snap.exists()) {
+      const d = snap.data();
+      const year = d.year || new Date().getFullYear();
+      const last = d.last || 0;
+      $('counterCurrent').innerHTML = `<code>${year}-${last}(교)</code> → 다음: <code>${year}-${last+1}(교)</code>`;
+    } else {
+      $('counterCurrent').innerHTML = `<span style="color:var(--t3)">카운터 없음 (첫 발급 시 자동 생성)</span>`;
+    }
+  } catch (e) {
+    $('counterCurrent').innerHTML = `<span style="color:#E74C3C">조회 실패: ${e.message}</span>`;
+  }
+};
+
+window.resetCertCounter = async () => {
+  const val = parseInt($('counterReset').value, 10);
+  if (isNaN(val) || val < 0) return toast('숫자를 입력하세요.', true);
+  const year = new Date().getFullYear();
+  const nextNum = val + 1;
+  if (!confirm(`카운터를 ${val}(으)로 재설정합니다.\n다음 발급될 번호는 ${year}-${nextNum}(교) 입니다.\n\n계속하시겠습니까?`)) return;
+
+  try {
+    await setDoc(doc(db, 'certConfig', 'counter'), {
+      last: val,
+      year: year,
+      updatedAt: serverTimestamp(),
+      resetBy: meDoc?.name || meDoc?.email || 'unknown',
+    });
+    $('counterResetStatus').innerHTML = `<span style="color:var(--g700)">✓ 카운터가 ${val}로 재설정되었습니다. 다음 발급: ${year}-${nextNum}(교)</span>`;
+    $('counterReset').value = '';
+    toast(`카운터 재설정 완료 → 다음: ${year}-${nextNum}(교)`);
+    loadCounterInfo();
+    certUpdatePreview(); // 미리보기 번호 갱신
+  } catch (e) {
+    $('counterResetStatus').innerHTML = `<span style="color:#E74C3C">재설정 실패: ${e.message}</span>`;
+    toast('재설정 실패: ' + e.message, true);
+  }
+};
+
 // 구글 시트에서 학번 목록 자동 불러오기
 window.loadStudentIdsFromSheet = async () => {
   if (!emailConfig?.sheetUrl) {
