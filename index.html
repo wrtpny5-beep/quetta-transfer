@@ -840,9 +840,14 @@ th:hover .sort-ind{opacity:1}
                 <div style="margin-top:10px;padding:12px;background:var(--warm1);border-radius:8px">
                   <div class="fg">
                     <label>학번 목록 (한 줄에 하나씩)</label>
-                    <textarea id="certBulkIds" placeholder="5435&#10;5430&#10;5013" rows="5" style="width:100%;padding:8px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:13px"></textarea>
+                    <textarea id="certBulkIds" placeholder="5435&#10;5430&#10;5013&#10;&#10;구글 시트에서 자동으로 학번 가져오려면 아래 버튼 클릭" rows="6" style="width:100%;padding:8px;border:1.5px solid var(--warm2);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:13px"></textarea>
+                    <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+                      <button class="btn btn-ghost btn-sm" onclick="loadStudentIdsFromSheet()">📥 시트에서 학번 자동 불러오기</button>
+                      <button class="btn btn-ghost btn-sm" onclick="$('certBulkIds').value = ''">🗑 목록 비우기</button>
+                    </div>
+                    <div id="bulkIdsStatus" style="font-size:12px;color:var(--t3);margin-top:6px"></div>
                   </div>
-                  <div style="font-size:12px;color:var(--t3);margin-bottom:8px">위 폼의 종류·과정·용도·발급자 정보를 공통으로 사용합니다. 생년월일 미등록 학생은 건너뜁니다. 이메일 발급은 구글 시트 설정 필요.</div>
+                  <div style="font-size:12px;color:var(--t3);margin-bottom:8px">위 폼의 종류·과정·용도·발급자 정보를 공통으로 사용합니다. 생년월일 미등록 학생은 건너뜁니다.</div>
                   <div style="display:flex;gap:6px;flex-wrap:wrap">
                     <button class="btn btn-gold btn-sm" onclick="certBulkIssue('pdf')">📥 일괄 PDF 발급</button>
                     <button class="btn btn-gold btn-sm" onclick="certBulkIssue('email')">✉️ 일괄 이메일 발급</button>
@@ -3880,6 +3885,32 @@ Good Better Best
 }
 
 // 일괄 발급
+// 구글 시트에서 학번 목록 자동 불러오기
+window.loadStudentIdsFromSheet = async () => {
+  if (!emailConfig?.sheetUrl) {
+    $('bulkIdsStatus').innerHTML = '<span style="color:#E74C3C">❌ 구글 시트가 설정되지 않았습니다. 이메일 발송 설정에서 등록하세요.</span>';
+    return toast('구글 시트가 설정되지 않았습니다.', true);
+  }
+  $('bulkIdsStatus').innerHTML = '<span style="color:var(--t2)">시트 조회 중...</span>';
+  try {
+    const map = await loadSheetEmails();
+    const ids = Object.keys(map);
+    if (!ids.length) {
+      $('bulkIdsStatus').innerHTML = '<span style="color:#E74C3C">시트에서 학번-이메일 매핑을 찾지 못했습니다.</span>';
+      return;
+    }
+    // 기존 textarea에 이미 값 있으면 확인
+    const existing = $('certBulkIds').value.trim();
+    if (existing && !confirm(`이미 입력된 학번이 있습니다. 시트의 ${ids.length}건으로 덮어쓸까요?`)) return;
+    $('certBulkIds').value = ids.join('\n');
+    $('bulkIdsStatus').innerHTML = `<span style="color:var(--g700)">✓ ${ids.length}건 불러옴</span>`;
+    toast(`${ids.length}건의 학번을 불러왔습니다.`);
+  } catch (e) {
+    $('bulkIdsStatus').innerHTML = `<span style="color:#E74C3C">❌ ${e.message}</span>`;
+    toast('시트 조회 실패: ' + e.message, true);
+  }
+};
+
 window.certBulkIssue = async (mode = 'pdf') => {
   const type = $('certType').value;
   const courseName = $('certCourse').value;
@@ -3902,35 +3933,67 @@ window.certBulkIssue = async (mode = 'pdf') => {
     }
   }
 
-  const modeLabel = mode === 'email' ? `이메일 발송 (${format === 'image' ? 'PNG' : 'PDF'})` : 'PDF 다운로드';
-  if (!confirm(`${ids.length}건 순차 ${modeLabel}을 시작합니다. 생년월일 미등록 학생은 건너뜁니다.${mode === 'email' ? '\n이메일 미등록 학생도 건너뜁니다.' : ''}\n진행할까요?`)) return;
-
-  let ok = 0, skip = 0, err = 0;
-  const skipList = [];
-  const errList = [];
-
-  for (const sid of ids) {
+  // 사전 검사: 각 학번을 상태별로 분류
+  const preFlight = ids.map(sid => {
     const stu = students.find(s => String(s.studentId) === sid);
-    if (!stu) { skip++; skipList.push(`${sid} (학번 미등록)`); continue; }
-    if (!stu.birthday) { skip++; skipList.push(`${sid} ${stu.name} (생년월일 미등록)`); continue; }
-    let toEmail = null;
-    if (mode === 'email') {
-      toEmail = emailMap[sid];
-      if (!toEmail) { skip++; skipList.push(`${sid} ${stu.name} (이메일 미등록)`); continue; }
-    }
+    if (!stu) return { sid, status: 'no-student', label: `${sid} — 학번 미등록` };
+    if (!stu.birthday) return { sid, stu, status: 'no-birthday', label: `${sid} ${stu.name} — 생년월일 미등록` };
+    if (mode === 'email' && !emailMap[sid]) return { sid, stu, status: 'no-email', label: `${sid} ${stu.name} — 이메일 미등록` };
+    const email = mode === 'email' ? emailMap[sid] : null;
+    return { sid, stu, email, status: 'ok', label: `${sid} ${stu.name}${email ? ' → ' + email : ''}` };
+  });
+
+  const okList = preFlight.filter(p => p.status === 'ok');
+  const noStudent = preFlight.filter(p => p.status === 'no-student');
+  const noBirthday = preFlight.filter(p => p.status === 'no-birthday');
+  const noEmail = preFlight.filter(p => p.status === 'no-email');
+
+  const modeLabel = mode === 'email' ? `이메일 발송 (${format === 'image' ? 'PNG' : 'PDF'})` : 'PDF 다운로드';
+
+  // 확인 다이얼로그: 카테고리별 요약 + 상세 리스트
+  let msg = `📧 일괄 ${modeLabel} — 발송 전 확인\n\n`;
+  msg += `총 ${ids.length}건 중:\n`;
+  msg += `✅ 발송 가능: ${okList.length}건\n`;
+  if (noEmail.length) msg += `❌ 이메일 미등록: ${noEmail.length}건\n`;
+  if (noBirthday.length) msg += `❌ 생년월일 미등록: ${noBirthday.length}건\n`;
+  if (noStudent.length) msg += `❌ 학번 미등록: ${noStudent.length}건\n`;
+
+  // 스킵 항목 상세 표시 (많으면 앞 10개만)
+  const skippedAll = [...noStudent, ...noBirthday, ...noEmail];
+  if (skippedAll.length > 0) {
+    msg += `\n📋 스킵될 학번 상세 (${skippedAll.length}건):\n`;
+    const showFirst = skippedAll.slice(0, 15);
+    msg += showFirst.map(p => `  · ${p.label}`).join('\n');
+    if (skippedAll.length > 15) msg += `\n  ... 외 ${skippedAll.length - 15}건 (콘솔 확인)`;
+  }
+
+  msg += `\n\n발송 가능한 ${okList.length}건에 대해 진행할까요?`;
+
+  if (okList.length === 0) {
+    console.log('[일괄 발급] 스킵 상세:', skippedAll);
+    return toast('발송 가능한 항목이 없습니다.', true);
+  }
+
+  // 전체 스킵 리스트 콘솔에 미리 출력
+  if (skippedAll.length) console.log('[일괄 발급 - 스킵 상세]', skippedAll.map(p => p.label));
+
+  if (!confirm(msg)) return;
+
+  // 실제 발송
+  let ok = 0, err = 0;
+  const errList = [];
+  for (const p of okList) {
     try {
-      await certIssueOne(stu, type, stu.birthday, courseName, purpose, issuer, mode, toEmail, format);
+      await certIssueOne(p.stu, type, p.stu.birthday, courseName, purpose, issuer, mode, p.email, format);
       ok++;
-      // 이메일 발송은 rate limit 배려
       if (mode === 'email') await new Promise(r => setTimeout(r, 500));
     } catch (e) {
       err++;
-      errList.push(`${sid} ${stu.name}: ${e.message}`);
+      errList.push(`${p.sid} ${p.stu.name}: ${e.message}`);
     }
   }
-  toast(`일괄 ${modeLabel} 완료: 성공 ${ok} / 건너뜀 ${skip} / 실패 ${err}`);
-  if (skipList.length) console.log('건너뛴 학생:', skipList);
-  if (errList.length) console.log('실패 학생:', errList);
+  toast(`일괄 ${modeLabel} 완료: 성공 ${ok} / 스킵 ${skippedAll.length} / 실패 ${err}`);
+  if (errList.length) console.log('[일괄 발급 - 실패 상세]', errList);
 };
 
 window.certReset = () => {
